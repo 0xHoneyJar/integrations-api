@@ -12,4 +12,4 @@ production = false
 [test]
 # Match freeside-quests + freeside-characters convention.
 # bun:test discovers `*.test.ts` files automatically.
-preload = []
+# (No preload — bun:test default behavior is sufficient.)
