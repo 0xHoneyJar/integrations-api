@@ -14,7 +14,8 @@ bun add effect@^3.10.0
 
 ```ts
 import {
-  DISCORD_DESCRIPTOR,
+  DISCORD_WEBHOOK_DESCRIPTOR,
+  DISCORD_INTERACTION_DESCRIPTOR,
   CLI_DESCRIPTOR,
   TELEGRAM_STUB,
   hasCapability,
@@ -24,10 +25,23 @@ import {
 } from '@0xhoneyjar/medium-registry';
 import { Schema } from 'effect';
 
-// Branch on capabilities
-if (hasCapability(DISCORD_DESCRIPTOR, 'sticker')) {
+// Persona-bot via webhook (Pattern B shell-bot · ruggy/satoshi/munkh)
+if (hasCapability(DISCORD_WEBHOOK_DESCRIPTOR, 'sticker')) {
   // emit a sticker payload
 }
+if (!hasCapability(DISCORD_WEBHOOK_DESCRIPTOR, 'modal')) {
+  // webhook context — modal NOT available; gate the modal-build branch
+}
+
+// Quest engine via interaction (slash + button + modal)
+if (hasCapability(DISCORD_INTERACTION_DESCRIPTOR, 'modal')) {
+  // build modal payload
+}
+if (hasCapability(DISCORD_INTERACTION_DESCRIPTOR, 'ephemeral')) {
+  // emit ephemeral flag
+}
+
+// CLI fallback
 if (!hasCapability(CLI_DESCRIPTOR, 'embed')) {
   // fall back to plain text
 }
@@ -35,9 +49,23 @@ if (!hasCapability(CLI_DESCRIPTOR, 'embed')) {
 // Round-trip schema decode
 const decoded = Schema.decodeUnknownSync(MediumCapability)(rawJson);
 
-// Type-narrowed identification
-const id = mediumIdOf(decoded); // 'discord' | 'cli' | 'telegram-stub'
+// Type-narrowed identification (4 variants in v0.2.0)
+const id = mediumIdOf(decoded); // 'discord-webhook' | 'discord-interaction' | 'cli' | 'telegram-stub'
 ```
+
+### v0.2.0 Discord context split (SKP-001 architectural fix)
+
+The Discord descriptor was split into webhook + interaction contexts. Modal and ephemeral capabilities are interaction-only (require an interaction token); they are NOT available via ordinary webhook delivery.
+
+| Capability | Webhook | Interaction |
+|---|---|---|
+| text · embed · attachment · sticker · customEmoji | ✓ | ✓ |
+| button · thread · reaction · mention | ✓ | ✓ |
+| modal | ✗ | ✓ |
+| ephemeral | ✗ | ✓ |
+| slashCommand | ✗ | ✓ |
+
+`DISCORD_DESCRIPTOR` is retained as a **deprecated alias** to `DISCORD_WEBHOOK_DESCRIPTOR` for v0.1.0 back-compat (most v0.1.0 consumers are persona-bots delivering via webhook). It will be **removed in v1.0.0**. New code should use the explicit names.
 
 ## API
 

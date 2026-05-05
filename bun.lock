@@ -9,9 +9,24 @@
         "typescript": "^5.7.0",
       },
     },
+    "packages/cli-renderer": {
+      "name": "@0xhoneyjar/cli-renderer",
+      "version": "0.1.0",
+      "dependencies": {
+        "@0xhoneyjar/medium-registry": "^0.2.0",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "effect": "^3.10.0",
+        "typescript": "^5.7.0",
+      },
+      "peerDependencies": {
+        "effect": "^3.10.0",
+      },
+    },
     "packages/protocol": {
       "name": "@0xhoneyjar/medium-registry",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "devDependencies": {
         "@types/bun": "latest",
         "effect": "^3.10.0",
@@ -23,6 +38,8 @@
     },
   },
   "packages": {
+    "@0xhoneyjar/cli-renderer": ["@0xhoneyjar/cli-renderer@workspace:packages/cli-renderer"],
+
     "@0xhoneyjar/medium-registry": ["@0xhoneyjar/medium-registry@workspace:packages/protocol"],
 
     "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
