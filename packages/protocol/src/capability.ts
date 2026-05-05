@@ -5,15 +5,24 @@
  * transforms. Answers: "what can THIS chat medium render?"
  *
  * Per [[chat-medium-presentation-boundary]] doctrine and SDD §3 + §5.1
- * (cycle R · 2026-05-04 · cmp-boundary-architecture). 4 sealed variants:
+ * (cycle R · 2026-05-04 · cmp-boundary-architecture).
  *
- *   - DiscordDescriptor  — full surface (text + embed + attachment +
- *                           customEmoji + sticker + slash + modal + button +
- *                           thread + reaction + ephemeral + mention)
+ * v0.2.0 ADDS Discord context split (per Cycle R Sprint 3 SKP-001 architectural
+ * fix) — Discord capabilities are NOT globally available across delivery
+ * shapes. Webhook delivery (the default for ruggy/satoshi/munkh persona-bots
+ * via Pattern B shell-bot) cannot render modals or ephemeral flags;
+ * those are interaction-only. Modeling them as universally true on a single
+ * `DISCORD_DESCRIPTOR` was a load-bearing inaccuracy that would have
+ * propagated to renderer logic.
+ *
+ * 5 sealed variants (was 3 in v0.1.0, +2 in v0.2.0):
+ *
+ *   - DiscordWebhookDescriptor — webhook-shape delivery (no modal · no ephemeral)
+ *                                Default for persona-bots via webhook.send()
+ *   - DiscordInteractionDescriptor — interaction-shape delivery (full incl modal + ephemeral)
+ *                                    Used by quest engine via /command + button + modal flows
  *   - CliDescriptor      — minimal (text + ansi only · all Discord caps false)
  *   - TelegramStub       — documented stub for future telegram-renderer cycle
- *                          (text + photo + sticker + stickerSet +
- *                          inlineKeyboard + botCommand surface to be filled)
  *
  * Each variant carries a `_tag` literal for type narrowing per architect lock
  * A2 (matches `@0xhoneyjar/quests-protocol/substrate-step.ts` Union pattern,
@@ -62,19 +71,25 @@ import { Schema } from "effect";
  */
 
 // ---------------------------------------------------------------------------
-// DiscordDescriptor — full surface
+// DiscordWebhookDescriptor — webhook-shape delivery (no modal · no ephemeral)
 // ---------------------------------------------------------------------------
 
 /**
- * Discord capabilities. Authority: `discord-api-types/v10` enum surface
- * consumed by `freeside-quests/packages/discord-renderer` (audited Sprint 3
- * R3.9 cross-repo audit test).
+ * Discord capabilities WHEN DELIVERED VIA WEBHOOK.
+ *
+ * This is the default delivery shape for persona-bots ruggy/satoshi/munkh:
+ * webhooks carry per-character avatar + username overrides via Pattern B
+ * shell-bot pattern. They do NOT carry interaction tokens, so modals + the
+ * ephemeral flag are NOT available on this delivery path.
+ *
+ * Authority: `discord-api-types/v10` enum surface consumed by
+ * `freeside-quests/packages/discord-renderer` (audited Sprint 3 R3.9).
  *
  * Numeric ceiling `embedFieldsMax: 25` matches Discord embed limit.
  * https://discord.com/developers/docs/resources/channel#embed-object-embed-limits
  */
-const DiscordDescriptor = Schema.Struct({
-  _tag: Schema.Literal("discord"),
+const DiscordWebhookDescriptor = Schema.Struct({
+  _tag: Schema.Literal("discord-webhook"),
   // text shapes
   text: Schema.Literal(true),
   embed: Schema.Literal(true),
@@ -84,11 +99,53 @@ const DiscordDescriptor = Schema.Struct({
   customEmoji: Schema.Literal(true),
   sticker: Schema.Literal(true),
   stickerSet: Schema.Literal(false), // Telegram-specific concept; Discord has individual stickers
-  // interactive
+  // interactive — webhook context: NO modal · NO ephemeral
+  slashCommand: Schema.Literal(false), // slash commands are interaction-only
+  modal: Schema.Literal(false), // modal requires interaction token (NOT available via webhook)
+  button: Schema.Literal(true), // button components ARE renderable in webhook payloads
+  inlineKeyboard: Schema.Literal(false), // Telegram-only
+  // threading
+  thread: Schema.Literal(true),
+  reaction: Schema.Literal(true),
+  mention: Schema.Literal(true),
+  ephemeral: Schema.Literal(false), // ephemeral flag requires interaction token
+  // bounded numerics
+  embedFieldsMax: Schema.Literal(25),
+}).pipe(Schema.annotations({ identifier: "DiscordWebhookDescriptor" }));
+
+// ---------------------------------------------------------------------------
+// DiscordInteractionDescriptor — interaction-shape delivery (full surface)
+// ---------------------------------------------------------------------------
+
+/**
+ * Discord capabilities WHEN DELIVERED VIA INTERACTION TOKEN.
+ *
+ * This is the delivery shape for slash commands, button presses, and modal
+ * submits — anywhere the bot received an interaction (with token) from
+ * Discord. Used by `freeside-quests/packages/discord-renderer` for
+ * /command flows + button responses + modal builders.
+ *
+ * Differs from DiscordWebhookDescriptor in:
+ *   - slashCommand: true (only valid response shape for ChatInput interactions)
+ *   - modal: true        (ApplicationCommandResponseType.Modal)
+ *   - ephemeral: true    (MessageFlags.Ephemeral flag)
+ */
+const DiscordInteractionDescriptor = Schema.Struct({
+  _tag: Schema.Literal("discord-interaction"),
+  // text shapes
+  text: Schema.Literal(true),
+  embed: Schema.Literal(true),
+  attachment: Schema.Literal(true),
+  ansi: Schema.Literal(false),
+  // rich payloads
+  customEmoji: Schema.Literal(true),
+  sticker: Schema.Literal(true),
+  stickerSet: Schema.Literal(false),
+  // interactive — interaction context: ALL Discord interactive caps available
   slashCommand: Schema.Literal(true),
   modal: Schema.Literal(true),
   button: Schema.Literal(true),
-  inlineKeyboard: Schema.Literal(false), // Telegram-only
+  inlineKeyboard: Schema.Literal(false),
   // threading
   thread: Schema.Literal(true),
   reaction: Schema.Literal(true),
@@ -96,7 +153,7 @@ const DiscordDescriptor = Schema.Struct({
   ephemeral: Schema.Literal(true),
   // bounded numerics
   embedFieldsMax: Schema.Literal(25),
-}).pipe(Schema.annotations({ identifier: "DiscordDescriptor" }));
+}).pipe(Schema.annotations({ identifier: "DiscordInteractionDescriptor" }));
 
 // ---------------------------------------------------------------------------
 // CliDescriptor — minimal · text + ANSI only
@@ -192,12 +249,17 @@ const TelegramStub = Schema.Struct({
  *
  * Discriminator: `_tag` literal. Per architect lock A2.
  *
+ * v0.2.0: Discord context split — Webhook + Interaction variants for the
+ * SKP-001 CRITICAL architectural fix (modal/ephemeral are interaction-only,
+ * not webhook).
+ *
  * Adding a new variant (e.g. `WebDescriptor` for HTML/React, `AgoraCanvasDescriptor`
  * for in-dimensions chat) is an additive minor bump — extend the Union, ship
  * a new descriptor singleton, no breaking change for existing consumers.
  */
 export const MediumCapability = Schema.Union(
-  DiscordDescriptor,
+  DiscordWebhookDescriptor,
+  DiscordInteractionDescriptor,
   CliDescriptor,
   TelegramStub,
 );
@@ -212,6 +274,9 @@ export type MediumCapabilityEncoded = Schema.Schema.Encoded<typeof MediumCapabil
 
 /**
  * Discriminator literal type — useful for typed switch over current medium.
+ *
+ * v0.2.0: now includes `discord-webhook` + `discord-interaction` (was just
+ * `discord` in v0.1.0). The legacy `discord` literal is NOT exported.
  */
 export type MediumId = MediumCapability["_tag"];
 
@@ -220,14 +285,34 @@ export type MediumId = MediumCapability["_tag"];
 // ---------------------------------------------------------------------------
 
 /**
- * Discord-only schema export. Use when a consumer wants to validate a
- * payload as specifically a Discord descriptor (rejects CLI/Telegram).
+ * Discord-Webhook-only schema export. Use when a consumer wants to validate
+ * a payload as specifically a webhook-context Discord descriptor.
  *
- * Most consumers want `MediumCapability` (the full Union); `DiscordSchema`
- * is for narrow-validation entry points.
+ * Most consumers want `MediumCapability` (the full Union); narrow exports
+ * are for narrow-validation entry points.
  */
-export const DiscordSchema = DiscordDescriptor;
-export type DiscordCapability = Schema.Schema.Type<typeof DiscordDescriptor>;
+export const DiscordWebhookSchema = DiscordWebhookDescriptor;
+export type DiscordWebhookCapability = Schema.Schema.Type<typeof DiscordWebhookDescriptor>;
+
+/**
+ * Discord-Interaction-only schema export. Use when a consumer wants to
+ * validate a payload as specifically an interaction-context descriptor.
+ */
+export const DiscordInteractionSchema = DiscordInteractionDescriptor;
+export type DiscordInteractionCapability = Schema.Schema.Type<typeof DiscordInteractionDescriptor>;
+
+/**
+ * @deprecated Since v0.2.0 — Discord descriptor was split into Webhook +
+ * Interaction contexts. Use `DiscordWebhookSchema` (default for persona-bots)
+ * or `DiscordInteractionSchema` (for slash-command + button + modal flows).
+ */
+export const DiscordSchema = DiscordWebhookDescriptor;
+/**
+ * @deprecated Since v0.2.0 — Discord descriptor was split into Webhook +
+ * Interaction contexts. Use `DiscordWebhookCapability` or
+ * `DiscordInteractionCapability`.
+ */
+export type DiscordCapability = Schema.Schema.Type<typeof DiscordWebhookDescriptor>;
 
 /**
  * CLI-only schema export. Same narrow-validation use case.

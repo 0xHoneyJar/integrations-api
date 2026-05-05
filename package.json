@@ -9,7 +9,8 @@
     "url": "https://github.com/0xHoneyJar/freeside-mediums.git"
   },
   "workspaces": [
-    "packages/protocol"
+    "packages/protocol",
+    "packages/cli-renderer"
   ],
   "scripts": {
     "build": "bun run --filter '*' build",

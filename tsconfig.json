@@ -18,6 +18,7 @@
   },
   "files": [],
   "references": [
-    { "path": "packages/protocol" }
+    { "path": "packages/protocol" },
+    { "path": "packages/cli-renderer" }
   ]
 }

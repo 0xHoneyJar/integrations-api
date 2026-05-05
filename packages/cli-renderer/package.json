@@ -1,8 +1,8 @@
 {
-  "name": "@0xhoneyjar/medium-registry",
-  "version": "0.2.0",
+  "name": "@0xhoneyjar/cli-renderer",
+  "version": "0.1.0",
   "private": false,
-  "description": "Sealed Effect Schema registry for chat-medium presentation capabilities. MediumCapability discriminated union (Discord webhook + interaction · CLI minimal · Telegram stub) consumed cross-repo by freeside-characters/persona-engine, freeside-quests/discord-renderer, and future medium adapters. Cycle R · cmp-boundary-architecture · 2026-05-04. v0.2.0: Discord context split (webhook vs interaction).",
+  "description": "ANSI-text renderer for chat-medium presentation registry. Second-medium proof for @0xhoneyjar/medium-registry — proves the L2 registry shape generalizes beyond Discord. Renders ruggy/satoshi/munkh digest+micro+weaver fixtures into terminal-safe ANSI text. Cycle R · cmp-boundary-architecture · 2026-05-04.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -30,23 +30,24 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/0xHoneyJar/freeside-mediums.git",
-    "directory": "packages/protocol"
+    "directory": "packages/cli-renderer"
   },
-  "homepage": "https://github.com/0xHoneyJar/freeside-mediums/tree/main/packages/protocol#readme",
+  "homepage": "https://github.com/0xHoneyJar/freeside-mediums/tree/main/packages/cli-renderer#readme",
   "bugs": {
     "url": "https://github.com/0xHoneyJar/freeside-mediums/issues"
   },
   "keywords": [
     "freeside",
     "mediums",
-    "registry",
-    "schema",
-    "effect",
-    "discord",
     "cli",
-    "telegram",
+    "ansi",
+    "renderer",
+    "terminal",
     "chat-medium-presentation-boundary"
   ],
+  "dependencies": {
+    "@0xhoneyjar/medium-registry": "^0.2.0"
+  },
   "peerDependencies": {
     "effect": "^3.10.0"
   },

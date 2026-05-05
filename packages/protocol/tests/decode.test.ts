@@ -5,6 +5,9 @@
  * descriptor variant; rejects malformed input; preserves all field values
  * through round-trip.
  *
+ * Sprint 3 v0.2.0 ADDS Discord context split — Webhook + Interaction
+ * variants get round-trip + narrow-validation coverage.
+ *
  * Per SDD §9.1 + architect lock A2 (sealed Union discriminated by `_tag`).
  */
 
@@ -12,9 +15,13 @@ import { describe, it, expect } from "bun:test";
 import { Schema } from "effect";
 import {
   MediumCapability,
+  DISCORD_WEBHOOK_DESCRIPTOR,
+  DISCORD_INTERACTION_DESCRIPTOR,
   DISCORD_DESCRIPTOR,
   CLI_DESCRIPTOR,
   TELEGRAM_STUB,
+  DiscordWebhookSchema,
+  DiscordInteractionSchema,
   DiscordSchema,
   CliSchema,
   TelegramSchema,
@@ -23,22 +30,54 @@ import {
 
 describe("MediumCapability — version", () => {
   it("exports MEDIUM_REGISTRY_VERSION as semver string", () => {
-    expect(MEDIUM_REGISTRY_VERSION).toBe("0.1.0");
+    expect(MEDIUM_REGISTRY_VERSION).toBe("0.2.0");
     expect(typeof MEDIUM_REGISTRY_VERSION).toBe("string");
     expect(MEDIUM_REGISTRY_VERSION).toMatch(/^\d+\.\d+\.\d+$/);
   });
 });
 
 describe("MediumCapability — round-trip decode (sealed Union)", () => {
-  it("decodes DISCORD_DESCRIPTOR", () => {
-    const decoded = Schema.decodeUnknownSync(MediumCapability)(DISCORD_DESCRIPTOR);
-    expect(decoded._tag).toBe("discord");
+  it("decodes DISCORD_WEBHOOK_DESCRIPTOR", () => {
+    const decoded = Schema.decodeUnknownSync(MediumCapability)(
+      DISCORD_WEBHOOK_DESCRIPTOR,
+    );
+    expect(decoded._tag).toBe("discord-webhook");
     expect(decoded.text).toBe(true);
     expect(decoded.embed).toBe(true);
     expect(decoded.sticker).toBe(true);
     expect(decoded.embedFieldsMax).toBe(25);
     expect(decoded.ansi).toBe(false);
     expect(decoded.inlineKeyboard).toBe(false);
+    // SKP-001 architectural fix: webhook context cannot deliver modal/ephemeral
+    expect(decoded.modal).toBe(false);
+    expect(decoded.ephemeral).toBe(false);
+    expect(decoded.slashCommand).toBe(false);
+    // BUT button is renderable in webhook payloads
+    expect(decoded.button).toBe(true);
+  });
+
+  it("decodes DISCORD_INTERACTION_DESCRIPTOR", () => {
+    const decoded = Schema.decodeUnknownSync(MediumCapability)(
+      DISCORD_INTERACTION_DESCRIPTOR,
+    );
+    expect(decoded._tag).toBe("discord-interaction");
+    expect(decoded.text).toBe(true);
+    expect(decoded.embed).toBe(true);
+    expect(decoded.sticker).toBe(true);
+    expect(decoded.embedFieldsMax).toBe(25);
+    // Interaction context: ALL Discord interactive caps available
+    expect(decoded.modal).toBe(true);
+    expect(decoded.ephemeral).toBe(true);
+    expect(decoded.slashCommand).toBe(true);
+    expect(decoded.button).toBe(true);
+  });
+
+  it("DISCORD_DESCRIPTOR (deprecated alias) === DISCORD_WEBHOOK_DESCRIPTOR", () => {
+    // Back-compat: DISCORD_DESCRIPTOR resolves to webhook context (the
+    // safer default for v0.1.0 consumers · most were persona-bot-shaped).
+    expect(DISCORD_DESCRIPTOR).toBe(DISCORD_WEBHOOK_DESCRIPTOR);
+    const decoded = Schema.decodeUnknownSync(MediumCapability)(DISCORD_DESCRIPTOR);
+    expect(decoded._tag).toBe("discord-webhook");
   });
 
   it("decodes CLI_DESCRIPTOR", () => {
@@ -63,18 +102,43 @@ describe("MediumCapability — round-trip decode (sealed Union)", () => {
   });
 
   it("rejects descriptor with unknown _tag", () => {
-    const malformed = { ...DISCORD_DESCRIPTOR, _tag: "unknown-medium" };
+    const malformed = { ...DISCORD_WEBHOOK_DESCRIPTOR, _tag: "unknown-medium" };
+    expect(() => Schema.decodeUnknownSync(MediumCapability)(malformed)).toThrow();
+  });
+
+  it("rejects legacy `discord` _tag (split into webhook + interaction in v0.2.0)", () => {
+    // The bare `discord` literal was REMOVED in v0.2.0 · neither webhook
+    // nor interaction variant accepts it. Catches stale producers.
+    const malformed = { ...DISCORD_WEBHOOK_DESCRIPTOR, _tag: "discord" };
+    expect(() => Schema.decodeUnknownSync(MediumCapability)(malformed)).toThrow();
+  });
+
+  it("rejects Discord webhook descriptor with modal=true (SKP-001 lock)", () => {
+    // The whole architectural rationale: modal cannot be true on webhook.
+    // If a consumer accidentally sets modal: true on a webhook descriptor,
+    // schema decode rejects it.
+    const malformed = { ...DISCORD_WEBHOOK_DESCRIPTOR, modal: true };
+    expect(() => Schema.decodeUnknownSync(MediumCapability)(malformed)).toThrow();
+  });
+
+  it("rejects Discord webhook descriptor with ephemeral=true (SKP-001 lock)", () => {
+    const malformed = { ...DISCORD_WEBHOOK_DESCRIPTOR, ephemeral: true };
+    expect(() => Schema.decodeUnknownSync(MediumCapability)(malformed)).toThrow();
+  });
+
+  it("rejects Discord interaction descriptor with modal=false (interaction MUST support modal)", () => {
+    const malformed = { ...DISCORD_INTERACTION_DESCRIPTOR, modal: false };
     expect(() => Schema.decodeUnknownSync(MediumCapability)(malformed)).toThrow();
   });
 
   it("rejects Discord descriptor with wrong literal value", () => {
     // Discord must have embedFieldsMax=25. Different value rejects.
-    const malformed = { ...DISCORD_DESCRIPTOR, embedFieldsMax: 100 };
+    const malformed = { ...DISCORD_WEBHOOK_DESCRIPTOR, embedFieldsMax: 100 };
     expect(() => Schema.decodeUnknownSync(MediumCapability)(malformed)).toThrow();
   });
 
   it("rejects descriptor missing required field", () => {
-    const { _tag, text, ...partial } = DISCORD_DESCRIPTOR;
+    const { _tag, text, ...partial } = DISCORD_WEBHOOK_DESCRIPTOR;
     const malformed = { _tag, ...partial }; // missing text
     expect(() => Schema.decodeUnknownSync(MediumCapability)(malformed)).toThrow();
   });
@@ -84,9 +148,18 @@ describe("MediumCapability — round-trip decode (sealed Union)", () => {
     expect(() => Schema.decodeUnknownSync(MediumCapability)(undefined)).toThrow();
   });
 
-  it("preserves all field values through round-trip (Discord)", () => {
-    const decoded = Schema.decodeUnknownSync(MediumCapability)(DISCORD_DESCRIPTOR);
-    expect(decoded).toEqual(DISCORD_DESCRIPTOR);
+  it("preserves all field values through round-trip (Discord webhook)", () => {
+    const decoded = Schema.decodeUnknownSync(MediumCapability)(
+      DISCORD_WEBHOOK_DESCRIPTOR,
+    );
+    expect(decoded).toEqual(DISCORD_WEBHOOK_DESCRIPTOR);
+  });
+
+  it("preserves all field values through round-trip (Discord interaction)", () => {
+    const decoded = Schema.decodeUnknownSync(MediumCapability)(
+      DISCORD_INTERACTION_DESCRIPTOR,
+    );
+    expect(decoded).toEqual(DISCORD_INTERACTION_DESCRIPTOR);
   });
 
   it("preserves all field values through round-trip (CLI)", () => {
@@ -101,17 +174,42 @@ describe("MediumCapability — round-trip decode (sealed Union)", () => {
 });
 
 describe("MediumCapability — narrow per-variant Schema validation", () => {
-  it("DiscordSchema decodes Discord descriptor", () => {
-    const decoded = Schema.decodeUnknownSync(DiscordSchema)(DISCORD_DESCRIPTOR);
-    expect(decoded._tag).toBe("discord");
+  it("DiscordWebhookSchema decodes webhook descriptor", () => {
+    const decoded = Schema.decodeUnknownSync(DiscordWebhookSchema)(
+      DISCORD_WEBHOOK_DESCRIPTOR,
+    );
+    expect(decoded._tag).toBe("discord-webhook");
   });
 
-  it("DiscordSchema rejects CLI descriptor", () => {
-    expect(() => Schema.decodeUnknownSync(DiscordSchema)(CLI_DESCRIPTOR)).toThrow();
+  it("DiscordWebhookSchema rejects interaction descriptor", () => {
+    expect(() =>
+      Schema.decodeUnknownSync(DiscordWebhookSchema)(DISCORD_INTERACTION_DESCRIPTOR),
+    ).toThrow();
   });
 
-  it("CliSchema rejects Discord descriptor", () => {
-    expect(() => Schema.decodeUnknownSync(CliSchema)(DISCORD_DESCRIPTOR)).toThrow();
+  it("DiscordInteractionSchema decodes interaction descriptor", () => {
+    const decoded = Schema.decodeUnknownSync(DiscordInteractionSchema)(
+      DISCORD_INTERACTION_DESCRIPTOR,
+    );
+    expect(decoded._tag).toBe("discord-interaction");
+  });
+
+  it("DiscordInteractionSchema rejects webhook descriptor", () => {
+    expect(() =>
+      Schema.decodeUnknownSync(DiscordInteractionSchema)(DISCORD_WEBHOOK_DESCRIPTOR),
+    ).toThrow();
+  });
+
+  it("DiscordSchema (deprecated alias) decodes webhook descriptor", () => {
+    // Deprecated alias points at webhook for back-compat
+    const decoded = Schema.decodeUnknownSync(DiscordSchema)(DISCORD_WEBHOOK_DESCRIPTOR);
+    expect(decoded._tag).toBe("discord-webhook");
+  });
+
+  it("CliSchema rejects Discord webhook descriptor", () => {
+    expect(() =>
+      Schema.decodeUnknownSync(CliSchema)(DISCORD_WEBHOOK_DESCRIPTOR),
+    ).toThrow();
   });
 
   it("TelegramSchema rejects CLI descriptor", () => {
@@ -120,43 +218,63 @@ describe("MediumCapability — narrow per-variant Schema validation", () => {
 });
 
 describe("MediumCapability — descriptor invariants (architect lock A3)", () => {
-  it("DISCORD_DESCRIPTOR is the sole singleton (referential equality)", () => {
-    // Ensures consumers always reference the singleton, not factory output.
-    // If a consumer accidentally creates a literal-valued copy, that's still
-    // structurally valid but breaks the singleton contract.
-    expect(DISCORD_DESCRIPTOR).toBe(DISCORD_DESCRIPTOR);
+  it("DISCORD_WEBHOOK_DESCRIPTOR is the sole singleton (referential equality)", () => {
+    expect(DISCORD_WEBHOOK_DESCRIPTOR).toBe(DISCORD_WEBHOOK_DESCRIPTOR);
   });
 
-  it("descriptors are deeply frozen (or readonly via TS)", () => {
-    // TS enforces readonly via the const assertion in capability.ts; runtime
-    // freezing is not required (matches asset-pipeline pattern).
-    expect(DISCORD_DESCRIPTOR._tag).toBe("discord");
+  it("DISCORD_INTERACTION_DESCRIPTOR is the sole singleton", () => {
+    expect(DISCORD_INTERACTION_DESCRIPTOR).toBe(DISCORD_INTERACTION_DESCRIPTOR);
+  });
+
+  it("descriptors have correct discriminators", () => {
+    expect(DISCORD_WEBHOOK_DESCRIPTOR._tag).toBe("discord-webhook");
+    expect(DISCORD_INTERACTION_DESCRIPTOR._tag).toBe("discord-interaction");
     expect(CLI_DESCRIPTOR._tag).toBe("cli");
     expect(TELEGRAM_STUB._tag).toBe("telegram-stub");
   });
 });
 
 describe("MediumCapability — discriminator narrowing", () => {
-  it("type narrows on _tag check", () => {
-    const desc: typeof DISCORD_DESCRIPTOR = DISCORD_DESCRIPTOR;
-    if (desc._tag === "discord") {
-      // type narrowed — embedFieldsMax is exactly 25
+  it("type narrows on webhook _tag check", () => {
+    const desc: typeof DISCORD_WEBHOOK_DESCRIPTOR = DISCORD_WEBHOOK_DESCRIPTOR;
+    if (desc._tag === "discord-webhook") {
       expect(desc.embedFieldsMax).toBe(25);
+      expect(desc.modal).toBe(false); // webhook narrowing locks modal=false
     }
   });
 
-  it("exhaustive switch covers all variants", () => {
-    function getMediumName(d: typeof DISCORD_DESCRIPTOR | typeof CLI_DESCRIPTOR | typeof TELEGRAM_STUB): string {
+  it("type narrows on interaction _tag check", () => {
+    const desc: typeof DISCORD_INTERACTION_DESCRIPTOR =
+      DISCORD_INTERACTION_DESCRIPTOR;
+    if (desc._tag === "discord-interaction") {
+      expect(desc.embedFieldsMax).toBe(25);
+      expect(desc.modal).toBe(true); // interaction narrowing locks modal=true
+    }
+  });
+
+  it("exhaustive switch covers all 4 variants", () => {
+    function getMediumName(
+      d:
+        | typeof DISCORD_WEBHOOK_DESCRIPTOR
+        | typeof DISCORD_INTERACTION_DESCRIPTOR
+        | typeof CLI_DESCRIPTOR
+        | typeof TELEGRAM_STUB,
+    ): string {
       switch (d._tag) {
-        case "discord":
-          return "Discord";
+        case "discord-webhook":
+          return "Discord (webhook)";
+        case "discord-interaction":
+          return "Discord (interaction)";
         case "cli":
           return "CLI";
         case "telegram-stub":
           return "Telegram (stub)";
       }
     }
-    expect(getMediumName(DISCORD_DESCRIPTOR)).toBe("Discord");
+    expect(getMediumName(DISCORD_WEBHOOK_DESCRIPTOR)).toBe("Discord (webhook)");
+    expect(getMediumName(DISCORD_INTERACTION_DESCRIPTOR)).toBe(
+      "Discord (interaction)",
+    );
     expect(getMediumName(CLI_DESCRIPTOR)).toBe("CLI");
     expect(getMediumName(TELEGRAM_STUB)).toBe("Telegram (stub)");
   });

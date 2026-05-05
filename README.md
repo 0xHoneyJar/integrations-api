@@ -20,8 +20,12 @@ Without a shared registry, every renderer hardcodes its medium's assumptions. Th
 
 | Package | Status | Purpose |
 |---------|--------|---------|
-| `@0xhoneyjar/medium-registry` (`packages/protocol`) | 0.1.0 sprint-2 (cycle R) | Sealed Effect Schema · MediumCapability discriminated union · Discord full + CLI minimal + Telegram stub descriptors |
-| `@0xhoneyjar/cli-renderer` (`packages/cli-renderer`) | future sprint-3 | Minimal ANSI renderer · second-medium proof |
+| `@0xhoneyjar/medium-registry` (`packages/protocol`) | **0.2.0 sprint-3** (cycle R) | Sealed Effect Schema · MediumCapability discriminated union · Discord webhook + interaction (split per SKP-001) · CLI minimal · Telegram stub |
+| `@0xhoneyjar/cli-renderer` (`packages/cli-renderer`) | **0.1.0 sprint-3** (cycle R) | ANSI text renderer · second-medium proof · ANSI injection guard |
+
+### v0.2.0 highlight: Discord context split
+
+The Discord descriptor was split into webhook + interaction contexts. Modal and ephemeral capabilities are interaction-only (require an interaction token); they are NOT available via webhook delivery. Persona-bots delivering through Pattern B shell-bot use webhook context — `DISCORD_WEBHOOK_DESCRIPTOR`. Quest engine using slash commands + button responses uses interaction context — `DISCORD_INTERACTION_DESCRIPTOR`. See [`CHANGELOG.md`](CHANGELOG.md) for migration details.
 
 ## Cycle context
 

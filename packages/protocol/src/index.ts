@@ -12,10 +12,17 @@
  *   - A5: `effect: ^3.10.0` declared as peerDependency
  *   - A7: Additive-only schema bumps (forward-compat lock for cycle-Q-style migrations)
  *
+ * v0.2.0 — Discord context split (SKP-001 architectural fix):
+ *   - DISCORD_WEBHOOK_DESCRIPTOR (no modal · no ephemeral)
+ *   - DISCORD_INTERACTION_DESCRIPTOR (full interactive surface)
+ *   - DISCORD_DESCRIPTOR retained as deprecated alias to webhook (back-compat)
+ *
  * Public API:
  *
- *   - MediumCapability (sealed Schema · discriminated union)
- *   - DISCORD_DESCRIPTOR · CLI_DESCRIPTOR · TELEGRAM_STUB (concrete singletons)
+ *   - MediumCapability (sealed Schema · 4-variant discriminated union)
+ *   - DISCORD_WEBHOOK_DESCRIPTOR · DISCORD_INTERACTION_DESCRIPTOR
+ *     CLI_DESCRIPTOR · TELEGRAM_STUB (concrete singletons)
+ *   - DISCORD_DESCRIPTOR (deprecated alias to webhook · removed v1.0.0)
  *   - hasCapability · pickCapability · mediumIdOf (typed accessors)
  *   - MediumCapabilityOverrides + TokenBinding + CharacterMediumBinding (override shapes)
  *   - MEDIUM_REGISTRY_VERSION (semver string)
@@ -27,6 +34,8 @@
 
 export {
   MediumCapability,
+  DiscordWebhookSchema,
+  DiscordInteractionSchema,
   DiscordSchema,
   CliSchema,
   TelegramSchema,
@@ -36,6 +45,8 @@ export type {
   MediumCapability as MediumCapabilityType,
   MediumCapabilityEncoded,
   MediumId,
+  DiscordWebhookCapability,
+  DiscordInteractionCapability,
   DiscordCapability,
   CliCapability,
   TelegramCapability,
@@ -45,7 +56,11 @@ export type {
 // Concrete descriptors (CONST singletons per architect lock A3)
 // ---------------------------------------------------------------------------
 
-export { DISCORD_DESCRIPTOR } from "./descriptors/discord.js";
+export {
+  DISCORD_WEBHOOK_DESCRIPTOR,
+  DISCORD_INTERACTION_DESCRIPTOR,
+  DISCORD_DESCRIPTOR,
+} from "./descriptors/discord.js";
 export { CLI_DESCRIPTOR } from "./descriptors/cli.js";
 export { TELEGRAM_STUB } from "./descriptors/telegram.stub.js";
 
@@ -88,5 +103,10 @@ export type {
  *     defaults explicit on existing variants
  *   - major: rename or removal of capability key, descriptor variant
  *     deprecation, behavioral change to accessor semantics
+ *
+ * v0.1.0 — initial release with single Discord descriptor (Sprint 2)
+ * v0.2.0 — Discord context split (Webhook + Interaction) per SKP-001
+ *          architectural fix. DISCORD_DESCRIPTOR retained as deprecated
+ *          alias to webhook for back-compat; will be removed in v1.0.0.
  */
-export const MEDIUM_REGISTRY_VERSION = "0.1.0" as const;
+export const MEDIUM_REGISTRY_VERSION = "0.2.0" as const;
