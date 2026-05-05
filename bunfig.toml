@@ -1,0 +1,15 @@
+# bunfig.toml — freeside-mediums monorepo
+#
+# Workspaces declared in root package.json. Bun resolves cross-package
+# imports through the workspaces field.
+
+[install]
+# Production-friendly defaults — installs dev deps too in dev,
+# omits them via NODE_ENV=production at deploy time.
+exact = false
+production = false
+
+[test]
+# Match freeside-quests + freeside-characters convention.
+# bun:test discovers `*.test.ts` files automatically.
+preload = []

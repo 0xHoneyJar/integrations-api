@@ -1,0 +1,24 @@
+{
+  "name": "freeside-mediums",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sealed Effect Schema registry for chat-medium presentation capabilities. The L2 boundary layer between L1 character config and L3 cmp-boundary transforms — answers 'what can THIS chat medium render?' for Discord, CLI, Telegram, and future surfaces. Cross-repo consumed by freeside-characters/persona-engine, freeside-quests/discord-renderer, loa-finn/cli surface.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0xHoneyJar/freeside-mediums.git"
+  },
+  "workspaces": [
+    "packages/protocol"
+  ],
+  "scripts": {
+    "build": "bun run --filter '*' build",
+    "typecheck": "bun run --filter '*' typecheck",
+    "test": "bun test",
+    "clean": "bun run --filter '*' clean"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.0"
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "name": "@0xhoneyjar/medium-registry",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Sealed Effect Schema registry for chat-medium presentation capabilities. MediumCapability discriminated union (Discord full · CLI minimal · Telegram stub) consumed cross-repo by freeside-characters/persona-engine, freeside-quests/discord-renderer, and future medium adapters. Cycle R · cmp-boundary-architecture · 2026-05-04.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b --force",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0xHoneyJar/freeside-mediums.git",
+    "directory": "packages/protocol"
+  },
+  "homepage": "https://github.com/0xHoneyJar/freeside-mediums/tree/main/packages/protocol#readme",
+  "bugs": {
+    "url": "https://github.com/0xHoneyJar/freeside-mediums/issues"
+  },
+  "keywords": [
+    "freeside",
+    "mediums",
+    "registry",
+    "schema",
+    "effect",
+    "discord",
+    "cli",
+    "telegram",
+    "chat-medium-presentation-boundary"
+  ],
+  "peerDependencies": {
+    "effect": "^3.10.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "effect": "^3.10.0",
+    "typescript": "^5.7.0"
+  }
+}

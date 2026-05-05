@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+bun.lockb
+*.tsbuildinfo
+
+# Build output
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Local env
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test artifacts
+coverage/
