@@ -1,0 +1,24 @@
+{
+  "schema_version": "3",
+  "slug": "mediums-api",
+  "publisher": "0xHoneyJar",
+  "is": {
+    "one_liner": "Sealed registry of chat-medium presentation capabilities — what can THIS chat medium render?",
+    "scope": [
+      "Answer 'what can this chat medium render?' as a sealed Effect Schema registry",
+      "Sit at the L2 boundary between L1 character config and L3 cmp-boundary transforms",
+      "Model MediumCapability as a discriminated union (Discord webhook + interaction, CLI, Telegram)"
+    ]
+  },
+  "is_not": [
+    "Does NOT implement any chat medium — it declares capabilities, not renderers",
+    "Will NOT be a Discord bot or a chat client",
+    "Does NOT transform output — that is the L3 cmp-boundary"
+  ],
+  "cycle_state": {
+    "status": "active",
+    "since": "2026-05-04",
+    "next_review": "2026-08-02"
+  },
+  "_comment": "Published as @0xhoneyjar/medium-registry (v0.2 live). composes_with + acvp_invariants + capabilities omitted pending port-schema sealing (ADR-007 App A.2 / ADR-008 §D-11). Consumed by freeside-characters, activities-api, loa-finn (see README)."
+}
