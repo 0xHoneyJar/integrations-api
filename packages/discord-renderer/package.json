@@ -1,0 +1,59 @@
+{
+  "name": "@0xhoneyjar/discord-renderer",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Theme → Discord Components-V2 renderer for the chat-medium presentation registry. Owns the render-side half of the C-1 RENDER-CONTRACT: reads a raw-but-bounded SurfaceConfig (freeside-worlds config-protocol) and escapes every CM-editable string for Discord markdown before emitting a Components-V2 components array. V1 surface: verify-message. Cycle C · bead arrakis-4re1 · 2026-05-31.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b --force",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0xHoneyJar/freeside-mediums.git",
+    "directory": "packages/discord-renderer"
+  },
+  "homepage": "https://github.com/0xHoneyJar/freeside-mediums/tree/main/packages/discord-renderer#readme",
+  "bugs": {
+    "url": "https://github.com/0xHoneyJar/freeside-mediums/issues"
+  },
+  "keywords": [
+    "freeside",
+    "mediums",
+    "discord",
+    "components-v2",
+    "renderer",
+    "theme",
+    "chat-medium-presentation-boundary"
+  ],
+  "dependencies": {
+    "@0xhoneyjar/medium-registry": "^0.2.0"
+  },
+  "peerDependencies": {
+    "effect": "^3.10.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "effect": "^3.10.0",
+    "typescript": "^5.7.0"
+  }
+}
