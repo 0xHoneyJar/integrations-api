@@ -41,7 +41,7 @@ import type {
   Theme,
   ComponentInstance,
 } from './config-types.js';
-import { escapeDiscordMarkdown, stripBlockSigils } from './escape-discord.js';
+import { escapeDiscordMarkdown } from './escape-discord.js';
 import { parseAccentColor, DEFAULT_ACCENT } from './theme-color.js';
 import {
   container,
@@ -92,9 +92,23 @@ function isSafeHttpUrl(url: string): boolean {
   }
 }
 
-/** Hard-truncate already-bounded text to the Discord API cap (defense-in-depth). */
+/**
+ * Hard-truncate already-bounded + already-ESCAPED text to the Discord API cap
+ * (defense-in-depth). Escaping happens before capping (each `\X` is one logical
+ * char but two code units), so a naive `slice(0, max)` can sever a `\X` pair and
+ * leave a DANGLING lone backslash that Discord would render as an escape of the
+ * next (truncated-away) char — or, worse, escape whatever the cap boundary lands
+ * on (MEDIUM-1). After slicing, if the result ends in an ODD run of backslashes,
+ * drop the trailing lone one so we never emit a dangling escape.
+ */
 function cap(text: string, max: number): string {
-  return text.length <= max ? text : text.slice(0, max);
+  if (text.length <= max) return text;
+  const sliced = text.slice(0, max);
+  const trailingBackslashes = /\\+$/.exec(sliced);
+  if (trailingBackslashes && trailingBackslashes[0].length % 2 === 1) {
+    return sliced.slice(0, -1);
+  }
+  return sliced;
 }
 
 /**
@@ -115,9 +129,12 @@ export function renderVerifyMessageToDiscord(
   const { copy, theme } = config;
 
   // ── Escape every CM-editable string (the render-side of RENDER-CONTRACT) ──
-  // title: strip block sigils FIRST (the renderer owns the `##` heading level),
-  // THEN escape inline format chars.
-  const safeTitle = escapeDiscordMarkdown(stripBlockSigils(copy.title));
+  // `escapeDiscordMarkdown` now folds in leading-line block-sigil stripping
+  // (HIGH-1), so the renderer owns the `##` heading level for the title AND
+  // body/buttonLabel/theme rich-text are all sigil-stripped uniformly — no
+  // field can forget it. `cap` runs AFTER escaping and is escape-aware
+  // (trims a dangling lone backslash at the truncation boundary — MEDIUM-1).
+  const safeTitle = escapeDiscordMarkdown(copy.title);
   const safeBody = cap(escapeDiscordMarkdown(copy.body), TEXT_DISPLAY_MAX);
   const safeButtonLabel = cap(escapeDiscordMarkdown(copy.buttonLabel), BUTTON_LABEL_MAX);
 

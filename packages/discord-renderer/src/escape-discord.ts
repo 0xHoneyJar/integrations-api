@@ -41,12 +41,17 @@
 
 /**
  * Discord markdown formatting characters escaped OUTSIDE inline-code spans.
- * `_ * ~ |` cover italic/bold/underline, strikethrough, and spoilers. We do
- * NOT escape backticks — they are the inline-code affordance and content
+ * `_ * ~ |` cover italic/bold/underline, strikethrough, and spoilers.
+ * `[ ]` cover the masked-link grammar `[text](url)` — escaping EITHER bracket
+ * breaks Discord's link parsing, so a CM-supplied `[here](https://evil)` renders
+ * as literal text instead of a LIVE clickable masked link (phishing vector on
+ * the verify surface — BLOCKER-1). The renderer's OWN link button is built
+ * structurally (ActionRow/Button), not via markdown, so this is harmless to it.
+ * We do NOT escape backticks — they are the inline-code affordance and content
  * inside them is rendered verbatim by Discord (mobile tap-to-copy). The
  * negative-lookbehind `(?<!\\)` avoids double-escaping an already-escaped char.
  */
-const FORMAT_CHARS = /(?<!\\)([_*~|])/g;
+const FORMAT_CHARS = /(?<!\\)([_*~|[\]])/g;
 
 /**
  * Structural `<...>` tokens that must survive VERBATIM (escaping their inner
@@ -74,18 +79,23 @@ const PLACEHOLDER_RE = /[-]/g;
 /**
  * Escape Discord markdown in an untrusted-but-bounded CM string.
  *
- * Algorithm (3 passes, mirrors the proven persona-engine strategy):
+ * Algorithm (mirrors the proven persona-engine strategy):
  *   1. Replace `@everyone` / `@here` with a zero-width-joiner break so the
  *      mass-ping keyword cannot form (belt-and-suspenders alongside the send
  *      layer's `allowed_mentions`). Done FIRST so the inserted ZWSP is not
  *      itself escaped.
- *   2. Pull protected `<...>` tokens into PUA placeholders.
- *   3. Escape `_ * ~ |` OUTSIDE inline-code spans (split on backtick: even
+ *   2. Strip leading-line block sigils (`#`/`>`/`-`/`*`) so a CM cannot smuggle
+ *      a heading / quote / list block into a slot the renderer styles itself
+ *      (HIGH-1). Folded in here — construction-true — so EVERY CM string gets
+ *      uniform treatment and a caller cannot forget a field.
+ *   3. Pull protected `<...>` tokens into PUA placeholders.
+ *   4. Escape `_ * ~ | [ ]` OUTSIDE inline-code spans (split on backtick: even
  *      indices are outside-code, odd are inside-code → left verbatim).
- *   4. Restore the protected tokens by placeholder index.
+ *   5. Restore the protected tokens by placeholder index.
  *
  * Idempotent for the format-char pass (the `(?<!\\)` guard prevents
- * double-escaping). Pure; no I/O.
+ * double-escaping) and for the sigil-strip pass (re-stripping an already-
+ * stripped line is a no-op). Pure; no I/O.
  */
 export function escapeDiscordMarkdown(text: string): string {
   if (!text) return text;
@@ -94,7 +104,12 @@ export function escapeDiscordMarkdown(text: string): string {
   // `@​everyone` does not trigger a ping and reads identically.
   let out = text.replace(/@(everyone|here)/g, '@​$1');
 
-  // Step 2: pull protected tokens out into PUA placeholders.
+  // Step 2: strip leading-line block sigils so a CM-supplied `#`/`>`/`-`/`*`
+  // at line-start cannot render as a heading / quote / list. Folded in so
+  // body / buttonLabel / theme rich-text all get it — not just the title.
+  out = stripBlockSigils(out);
+
+  // Step 3: pull protected tokens out into PUA placeholders.
   const protectedSegments: string[] = [];
   out = out.replace(PROTECTED_TOKEN, (match) => {
     const i = protectedSegments.length;
@@ -102,13 +117,13 @@ export function escapeDiscordMarkdown(text: string): string {
     return String.fromCodePoint(PLACEHOLDER_BASE + i);
   });
 
-  // Step 3: escape format chars OUTSIDE inline-code spans.
+  // Step 4: escape format chars OUTSIDE inline-code spans.
   out = out
     .split('`')
     .map((segment, idx) => (idx % 2 === 0 ? segment.replace(FORMAT_CHARS, '\\$1') : segment))
     .join('`');
 
-  // Step 4: restore protected tokens verbatim by placeholder index.
+  // Step 5: restore protected tokens verbatim by placeholder index.
   out = out.replace(PLACEHOLDER_RE, (ch) => {
     const i = ch.codePointAt(0)! - PLACEHOLDER_BASE;
     return protectedSegments[i] ?? '';
@@ -119,13 +134,13 @@ export function escapeDiscordMarkdown(text: string): string {
 
 /**
  * Strip the leading `#`/`>`/`-`/`*` block-markdown sigils Discord treats as
- * structural at line-start (headings, quotes, list bullets). Used for fields
- * the renderer wraps in its OWN structural markdown (e.g. a heading line),
- * where a CM-supplied leading `#` would compound into `## ## CM heading`.
+ * structural at line-start (headings, quotes, list bullets).
  *
- * Operates per line. The renderer applies this to the heading/title field
- * BEFORE escapeDiscordMarkdown so a CM cannot smuggle a different heading
- * level or a quote block into a slot the renderer styles itself.
+ * Operates per line. As of HIGH-1, this is folded INTO `escapeDiscordMarkdown`
+ * (Step 2) so EVERY CM-editable string — title, body, buttonLabel, theme
+ * rich-text — gets uniform treatment and a caller can never forget a field.
+ * It stays exported for explicit use and unit assertions; the sigil-strip is
+ * idempotent, so calling it before `escapeDiscordMarkdown` is harmless.
  */
 export function stripBlockSigils(text: string): string {
   if (!text) return text;

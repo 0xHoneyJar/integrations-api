@@ -187,6 +187,86 @@ describe('renderVerifyMessageToDiscord — render-side escaping (RENDER-CONTRACT
     expect(label).toContain('\\_\\_Click\\_\\_');
     expect(label).toContain('\\*me\\*');
   });
+
+  // BLOCKER-1: a CM `[here](url)` masked link must NOT render as a live
+  // clickable link on the verify surface (phishing). Escaping `[`/`]` breaks
+  // Discord's `[text](url)` parser → literal text. The renderer's OWN link
+  // button is structural (ActionRow/Button), so it is unaffected.
+  it('escapes masked-link grammar so [here](url) is not a LIVE link (BLOCKER-1)', () => {
+    const out = renderVerifyMessageToDiscord({
+      surfaceConfig: MALICIOUS_COPY_CONFIG,
+      verifyUrl: VERIFY_URL,
+    });
+    const c = container(out);
+    const text = allText(c);
+    // the rendered TextDisplay copy contains NO unescaped `](` — the bracket→
+    // paren transition that forms a Discord masked link. (We assert on the body
+    // TextDisplays, not the structural button: the button has no `](` anyway.)
+    for (const td of textDisplays(c)) {
+      const content = td.content ?? '';
+      // every `](` must be preceded by a backslash (escaped `]`).
+      const idx = content.indexOf('](');
+      if (idx !== -1) {
+        expect(content[idx - 1]).toBe('\\');
+      }
+      // belt: a regex scan for an UNESCAPED `](` finds nothing.
+      expect(/(?<!\\)\]\(/.test(content)).toBe(false);
+    }
+    // and the specific smuggled link text is rendered as escaped literal.
+    expect(text).toContain('\\[here\\]');
+  });
+
+  // HIGH-1: block-sigil stripping is folded into escapeDiscordMarkdown, so the
+  // BODY field (not just the title) is sigil-stripped through the renderer.
+  it('strips leading block sigils from the BODY field, not just the title (HIGH-1)', () => {
+    const cfg: typeof CLEAN_VERIFY_CONFIG = {
+      ...CLEAN_VERIFY_CONFIG,
+      config: {
+        ...CLEAN_VERIFY_CONFIG.config,
+        copy: { ...CLEAN_VERIFY_CONFIG.config.copy, body: '# H\n> q' },
+      },
+    };
+    const out = renderVerifyMessageToDiscord({ surfaceConfig: cfg, verifyUrl: VERIFY_URL });
+    const c = container(out);
+    // the body TextDisplay carries the stripped copy (no heading / quote block).
+    const body = textDisplays(c).map((b) => b.content ?? '').find((s) => s.includes('H'));
+    expect(body).toBe('H\nq');
+    // no body TextDisplay starts a line with a heading or quote sigil.
+    for (const td of textDisplays(c)) {
+      const content = td.content ?? '';
+      // skip the renderer's OWN `## <title>` heading (block 0) — that level is
+      // structural and owned by the renderer.
+      if (content.startsWith('## ')) continue;
+      expect(/^\s*(?:#{1,3}\s|>\s)/m.test(content)).toBe(false);
+    }
+  });
+});
+
+// ─── MEDIUM-1: cap is escape-aware (no dangling backslash at the boundary) ──
+
+describe('renderVerifyMessageToDiscord — cap is escape-aware (MEDIUM-1)', () => {
+  it('never leaves a dangling lone backslash when truncating escaped copy', () => {
+    // buttonLabel cap is 80. Build a label whose ESCAPED form lands a lone `\`
+    // exactly on the cap boundary: 79 plain chars then a `*` (escapes to `\*`).
+    // Naive slice(0,80) would end on the `\` of `\*` → a dangling escape.
+    const label = 'x'.repeat(79) + '*'.repeat(20);
+    const cfg: typeof CLEAN_VERIFY_CONFIG = {
+      ...CLEAN_VERIFY_CONFIG,
+      config: {
+        ...CLEAN_VERIFY_CONFIG.config,
+        copy: { ...CLEAN_VERIFY_CONFIG.config.copy, buttonLabel: label },
+      },
+    };
+    const out = renderVerifyMessageToDiscord({ surfaceConfig: cfg, verifyUrl: VERIFY_URL });
+    const row = actionRowOf(container(out))!;
+    const rendered = row.components![0]!.label!;
+    // bounded to the Discord cap…
+    expect(rendered.length).toBeLessThanOrEqual(80);
+    // …and NOT ending in an odd run of backslashes (no dangling escape).
+    const trailing = /\\+$/.exec(rendered);
+    const trailingLen = trailing ? trailing[0].length : 0;
+    expect(trailingLen % 2).toBe(0);
+  });
 });
 
 // ─── unit: escapeDiscordMarkdown ──────────────────────────────────────────
@@ -219,6 +299,22 @@ describe('escapeDiscordMarkdown — unit', () => {
 
   it('is a no-op on empty input', () => {
     expect(escapeDiscordMarkdown('')).toBe('');
+  });
+
+  // HIGH-1: leading-line block sigils are stripped by escapeDiscordMarkdown
+  // itself (folded in), so a `# heading` / `> quote` in ANY CM field — not just
+  // the title — cannot render as a heading or quote block.
+  it('strips leading block sigils so a body `# H\\n> q` is not a heading/quote (HIGH-1)', () => {
+    const out = escapeDiscordMarkdown('# H\n> q');
+    expect(out).toBe('H\nq');
+    expect(out).not.toContain('# ');
+    expect(out).not.toContain('> ');
+  });
+
+  it('escapes the masked-link grammar `[ ]` so a link cannot form (BLOCKER-1)', () => {
+    const out = escapeDiscordMarkdown('see [here](https://evil.example) now');
+    expect(out).toBe('see \\[here\\](https://evil.example) now');
+    expect(/(?<!\\)\]\(/.test(out)).toBe(false);
   });
 
   it('containsUnescapedMarkdown reports raw format chars outside code', () => {
