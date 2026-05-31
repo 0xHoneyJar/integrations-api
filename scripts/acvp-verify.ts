@@ -21,7 +21,7 @@
  * same posture loa-freeside doctor.ts uses for the allowlist.
  */
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 const REPO = process.cwd();
@@ -71,6 +71,15 @@ function main(): number {
     console.error(`acvp:verify — could not parse slug from ${BEACON_REL}`);
     return 1;
   }
+  // BR-3 (bridgebuilder): a populated `acvp_invariants:` block that parses to
+  // ZERO entries is parser/format drift, NOT a valid "nothing to attest" —
+  // fail loud rather than silently emitting no receipt (false-green run).
+  if (invariants.length === 0 && /^acvp_invariants\s*:/m.test(beaconText)) {
+    console.error(
+      `acvp:verify — ${slug}: ${BEACON_REL} declares acvp_invariants but none parsed — format drift? refusing to proceed`,
+    );
+    return 1;
+  }
   const active = invariants.filter((i) => i.status !== "aspirational");
   if (active.length === 0) {
     console.log(`acvp:verify — ${slug}: no active (non-aspirational) invariants to attest; nothing to do`);
@@ -78,6 +87,15 @@ function main(): number {
   }
 
   const proofPaths = [...new Set(active.map((i) => i.proof_artifact))];
+  // BR-4 (bridgebuilder): pre-check existence so a beacon typo (config error)
+  // is distinguishable from a genuine test failure — both would otherwise print
+  // the same "proof tests FAILED" message after a non-zero `bun test`.
+  const missing = proofPaths.filter((p) => !existsSync(join(REPO, p)));
+  if (missing.length > 0) {
+    console.error(`acvp:verify — ${slug}: declared proof_artifact(s) not found (check ${BEACON_REL}):`);
+    for (const m of missing) console.error(`  ✗ ${m}`);
+    return 1;
+  }
   console.log(`acvp:verify — ${slug}: running ${proofPaths.length} proof file(s):`);
   for (const p of proofPaths) console.log(`  · ${p}`);
   try {
