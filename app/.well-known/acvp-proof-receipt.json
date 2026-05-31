@@ -1,0 +1,34 @@
+[
+  {
+    "slug": "mediums-api",
+    "invariant_id": "schema_enforcement",
+    "proof_artifact": "packages/protocol/tests/decode.test.ts",
+    "test_runner": "bun",
+    "passed_at": "2026-05-31T02:36:07.048Z",
+    "commit_sha": "382f170c9049fa20de0152d5f07cdf2dc8f7a7b8"
+  },
+  {
+    "slug": "mediums-api",
+    "invariant_id": "state_machine_totality",
+    "proof_artifact": "packages/protocol/tests/cross-repo-audit.test.ts",
+    "test_runner": "bun",
+    "passed_at": "2026-05-31T02:36:07.048Z",
+    "commit_sha": "382f170c9049fa20de0152d5f07cdf2dc8f7a7b8"
+  },
+  {
+    "slug": "mediums-api",
+    "invariant_id": "schema_enforcement",
+    "proof_artifact": "packages/protocol/tests/overrides.test.ts",
+    "test_runner": "bun",
+    "passed_at": "2026-05-31T02:36:07.048Z",
+    "commit_sha": "382f170c9049fa20de0152d5f07cdf2dc8f7a7b8"
+  },
+  {
+    "slug": "mediums-api",
+    "invariant_id": "schema_enforcement",
+    "proof_artifact": "packages/cli-renderer/tests/smoke.test.ts",
+    "test_runner": "bun",
+    "passed_at": "2026-05-31T02:36:07.048Z",
+    "commit_sha": "382f170c9049fa20de0152d5f07cdf2dc8f7a7b8"
+  }
+]
