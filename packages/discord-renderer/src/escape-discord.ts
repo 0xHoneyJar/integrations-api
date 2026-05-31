@@ -74,7 +74,18 @@ const PROTECTED_TOKEN = /<(a?:[A-Za-z0-9_]+:\d+|@[!&]?\d+|#\d+|t:\d+(?::[A-Za-z]
  * the escape pass untouched.
  */
 const PLACEHOLDER_BASE = 0xe000;
-const PLACEHOLDER_RE = /[-]/g;
+/**
+ * Matches the PUA placeholder code points the token pull-out (Step 3) inserts
+ * via `String.fromCodePoint(PLACEHOLDER_BASE + i)`. Written with explicit `\u`
+ * escapes (NOT literal PUA chars) so the regex survives a source round-trip:
+ * a literal-PUA class renders as a bare `[-]`-looking mojibake in editors and
+ * reviews, and a copy-paste "cleanup" of that mojibake would silently narrow the
+ * class to a single literal hyphen, leaving every protected token unrestored
+ * (garbled render) AND corrupting literal hyphens in CM content. The range is
+ * the full Unicode Private-Use-Area block (U+E000-U+F8FF), bounding any
+ * placeholder index the pull-out can produce.
+ */
+const PLACEHOLDER_RE = /[\uE000-\uF8FF]/g;
 
 /**
  * Escape Discord markdown in an untrusted-but-bounded CM string.

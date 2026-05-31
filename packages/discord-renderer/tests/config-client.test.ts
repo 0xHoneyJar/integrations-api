@@ -26,6 +26,20 @@ function mockFetch(status: number, body: unknown, capture?: (url: string, init?:
   }) as unknown as typeof fetch;
 }
 
+/**
+ * Mock fetch that returns a RAW (un-stringified) body — used to simulate a 200
+ * with malformed / truncated JSON, which `res.json()` cannot parse. (The
+ * standard `mockFetch` JSON-stringifies its body, so it can never produce an
+ * unparseable response.)
+ */
+function rawBodyFetch(status: number, rawBody: string) {
+  return (async () =>
+    new Response(rawBody, {
+      status,
+      headers: { 'content-type': 'application/json' },
+    })) as unknown as typeof fetch;
+}
+
 describe('readSurfaceConfig — mocked config-service GET contract', () => {
   it('200 → ok with envelope/version/updatedAt', async () => {
     const fetchMock = mockFetch(200, {
@@ -99,6 +113,29 @@ describe('readSurfaceConfig — mocked config-service GET contract', () => {
     });
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.reason).toBe('unauthorized');
+  });
+
+  // F-002 (BEAUVOIR): a 200 whose body is malformed / truncated JSON must NOT
+  // throw past the fetch catch — `res.json()` rejects and the original code had
+  // the parse OUTSIDE any try/catch (fail-soft hole). The renderer's posture is
+  // "render defaults rather than crash the bot", so a bad 200 body fail-softs to
+  // an `error` miss with status 200.
+  it('200 with malformed JSON → fail-soft error miss, never throws (F-002)', async () => {
+    const fetchMock = rawBodyFetch(200, 'not json');
+    let res: Awaited<ReturnType<typeof readSurfaceConfig>>;
+    await expect(
+      (async () => {
+        res = await readSurfaceConfig('mibera', 'verify-message', {
+          baseUrl: 'https://config.internal',
+          fetch: fetchMock,
+        });
+      })(),
+    ).resolves.toBeUndefined(); // the IIFE resolves (no throw)
+    expect(res!.ok).toBe(false);
+    if (!res!.ok) {
+      expect(res!.reason).toBe('error');
+      expect(res!.status).toBe(200);
+    }
   });
 
   it('network failure → fail-soft error miss, never throws', async () => {

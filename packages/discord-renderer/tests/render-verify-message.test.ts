@@ -289,6 +289,26 @@ describe('escapeDiscordMarkdown — unit', () => {
     expect(out).toContain('<t:1700000000:f>');
   });
 
+  // F-001 (BEAUVOIR): the PUA placeholder-restore regex (PLACEHOLDER_RE) MUST
+  // match the U+E000–U+F8FF range the token pull-out inserts — NOT a literal
+  // hyphen. If it ever narrows to `/[-]/g` (mojibake of the PUA class), every
+  // protected token is left as a raw PUA char (garbled render) AND literal
+  // hyphens in CM content get matched/corrupted. This test pins BOTH halves so
+  // a future "cleanup" of the regex can't silently regress it.
+  it('round-trips protected tokens AND preserves literal hyphens (F-001)', () => {
+    const out = escapeDiscordMarkdown(
+      'gm <:mibera_ninja:123456789012345678> at <t:1700000000:f> — see the well-known mibera-ninja docs',
+    );
+    // Tokens restored verbatim (not left as raw PUA placeholders).
+    expect(out).toContain('<:mibera_ninja:123456789012345678>');
+    expect(out).toContain('<t:1700000000:f>');
+    // Literal hyphens in body survive untouched.
+    expect(out).toContain('well-known');
+    expect(out).toContain('mibera-ninja');
+    // No leftover Private-Use-Area placeholder leaked through (restore fired).
+    expect(/[\uE000-\uF8FF]/.test(out)).toBe(false);
+  });
+
   it('neutralizes @everyone and @here', () => {
     expect(escapeDiscordMarkdown('@everyone @here')).toBe('@​everyone @​here');
   });

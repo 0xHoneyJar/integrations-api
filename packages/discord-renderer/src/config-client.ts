@@ -86,7 +86,16 @@ export async function readSurfaceConfig<Sf extends Surface>(
   }
 
   if (res.status === 200) {
-    const body = (await res.json()) as ConfigReadBody<Sf>;
+    let body: ConfigReadBody<Sf>;
+    try {
+      body = (await res.json()) as ConfigReadBody<Sf>;
+    } catch {
+      // 200 with malformed / truncated JSON body → fail-soft, do NOT throw.
+      // A bad body is no more recoverable than a network error from the
+      // renderer's perspective; treat it identically so the caller renders
+      // defaults instead of crashing the bot's send path.
+      return { ok: false, reason: 'error', status: 200 };
+    }
     return {
       ok: true,
       envelope: body.envelope,
