@@ -16,6 +16,7 @@
     "build": "bun run --filter '*' build",
     "typecheck": "bun run --filter '*' typecheck",
     "test": "bun test",
+    "acvp:verify": "bun scripts/acvp-verify.ts",
     "clean": "bun run --filter '*' clean"
   },
   "devDependencies": {
