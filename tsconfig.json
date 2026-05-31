@@ -19,6 +19,7 @@
   "files": [],
   "references": [
     { "path": "packages/protocol" },
-    { "path": "packages/cli-renderer" }
+    { "path": "packages/cli-renderer" },
+    { "path": "packages/discord-renderer" }
   ]
 }
