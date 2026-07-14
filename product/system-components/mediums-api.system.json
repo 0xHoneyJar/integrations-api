@@ -1,0 +1,60 @@
+{
+  "$schema": "https://raw.githubusercontent.com/0xHoneyJar/loa-freeside/177a57a4fdb18c071b4f82f7560ca705b5807a1c/spec/product/system-component.schema.json",
+  "schema_version": "1.0",
+  "component_id": "mediums-api",
+  "repository": "github:0xHoneyJar/mediums-api",
+  "layer": "building",
+  "operator": {
+    "role": "Freeside systems component engineer",
+    "job": "Select a typed presentation capability for Discord, Telegram, or CLI without hardcoding medium assumptions in a composer."
+  },
+  "object": {
+    "kind": "system-component",
+    "description": "The sealed capability registry for chat-medium presentation and safe renderer selection."
+  },
+  "question": "What can this delivery medium render in the current interaction context?",
+  "responsibility": "Own medium descriptors, capability decoding, and context-safe presentation constraints.",
+  "consumers": [
+    {
+      "name": "freeside-characters",
+      "need": "Typed Discord, Telegram, and CLI capabilities at the delivery boundary."
+    },
+    {
+      "name": "activities-api",
+      "need": "Renderer constraints for quest and engagement surfaces."
+    },
+    {
+      "name": "agent and CLI consumers",
+      "need": "Presentation behavior that does not leak medium-specific assumptions into substrate logic."
+    }
+  ],
+  "trust": {
+    "contract_status": "declared",
+    "contract_refs": [
+      "file:packages/protocol/README.md",
+      "file:packages/protocol/src/index.ts"
+    ],
+    "evidence_refs": [
+      "file:README.md"
+    ],
+    "note": "The registry defines presentation capability, not content truth or product intent."
+  },
+  "actions": [
+    "inspect-capabilities",
+    "select-descriptor",
+    "render-safely"
+  ],
+  "boundaries": {
+    "owns": [
+      "Medium capability descriptors and context-specific rendering limits.",
+      "Safe decoding of Discord, Telegram, and CLI presentation capabilities."
+    ],
+    "does_not_own": [
+      "Character voice, community facts, or campaign intent.",
+      "Delivery orchestration or product analytics."
+    ],
+    "missing_capability_handoff": "Extend the medium descriptor additively; do not hardcode a new medium capability in a consuming renderer."
+  },
+  "flow_moments": [],
+  "unmapped_reason": "The current Audit MVP is a dashboard read surface; no chat-medium presentation role has been activated for this flow."
+}
