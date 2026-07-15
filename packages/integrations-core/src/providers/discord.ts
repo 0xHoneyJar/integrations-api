@@ -147,3 +147,25 @@ export const discordAdapter: AdapterFn = (
 
 /** Provider-keyed registry layer registering ONLY the discord adapter (§16.8). */
 export const DiscordAdapterRegistryLayer = AdapterRegistryLayer({ discord: discordAdapter });
+
+/**
+ * The single classification table (§16.11) — coverage is DERIVED from this, and
+ * a test asserts the adapter switch above agrees with it (no drift). Bounded to
+ * the wave-1 admitted surface; every other event → Quarantined{unclassified-event}.
+ */
+export const DISCORD_CLASSIFICATION: ReadonlyArray<{
+  readonly event: string;
+  readonly tier: "tier-1" | "tier-2" | "tier-3";
+  readonly disposition: "Projected" | "Ignored";
+  readonly reasonCode?: "message-content-excluded";
+}> = [
+  { event: "GUILD_MEMBER_ADD", tier: "tier-1", disposition: "Projected" },
+  { event: "GUILD_MEMBER_UPDATE", tier: "tier-1", disposition: "Projected" },
+  { event: "GUILD_MEMBER_REMOVE", tier: "tier-1", disposition: "Projected" },
+  {
+    event: "MESSAGE_CREATE",
+    tier: "tier-3",
+    disposition: "Ignored",
+    reasonCode: "message-content-excluded",
+  },
+];

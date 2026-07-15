@@ -1,0 +1,17 @@
+{
+  "provider": "discord",
+  "sourceClass": "openapi",
+  "url": "https://github.com/discord/discord-api-spec",
+  "ref": "specs/openapi.json + specs/openapi_preview.json (OpenAPI 3.1, Discord API v10)",
+  "retrievedAt": "2026-07-15T00:00:00Z",
+  "generator": "design-level-no-generator",
+  "generatorVersion": "wave-1",
+  "discovered": [
+    "REST surface is design-level this wave; ingestion is Gateway-event driven. REST success is verified out of band per architecture §7."
+  ],
+  "patches": [],
+  "validation": {
+    "semanticFocus": "Confirmed the official Discord OpenAPI repo publishes specs/openapi.json (stable) + specs/openapi_preview.json (preview, breaking changes without notice), OpenAPI 3.1, API v10.",
+    "sourceDomain": "github.com/discord/discord-api-spec (official Discord)"
+  }
+}

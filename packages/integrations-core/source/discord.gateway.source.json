@@ -1,0 +1,21 @@
+{
+  "provider": "discord",
+  "sourceClass": "event-catalog",
+  "url": "https://docs.discord.com/developers/topics/gateway-events",
+  "ref": "gateway-events (Discord API v10) — snapshot 2026-07-15",
+  "retrievedAt": "2026-07-15T00:00:00Z",
+  "generator": "design-level-no-generator",
+  "generatorVersion": "wave-1",
+  "discovered": [
+    "GUILD_MEMBER_ADD (guild_id, user{id}, roles[], joined_at, nick)",
+    "GUILD_MEMBER_UPDATE (guild_id, user{id}, roles[], ...)",
+    "GUILD_MEMBER_REMOVE (guild_id, user{id})",
+    "MESSAGE_CREATE (content) — excluded from the Tier-1 member graph",
+    "Session lifecycle (Tier-2, not wave-1): HELLO(10), READY(0), RESUMED(0), INVALID_SESSION(9), RECONNECT(7), Heartbeat(1); sequence s drives resume replay"
+  ],
+  "patches": [],
+  "validation": {
+    "semanticFocus": "Verified member event names + payload fields and session-lifecycle event names against the primary source 2026-07-15.",
+    "sourceDomain": "docs.discord.com/developers (official Discord)"
+  }
+}
