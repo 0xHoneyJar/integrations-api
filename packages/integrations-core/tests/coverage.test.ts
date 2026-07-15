@@ -43,6 +43,9 @@ describe("governance artifacts exist at canonical paths + validate (AC-9, §11.6
     const gw = Schema.decodeUnknownSync(SourceManifest)(read("source/discord.gateway.source.json"));
     expect(rest.sourceClass).toBe("openapi");
     expect(gw.sourceClass).toBe("event-catalog");
+    expect(rest.ref).toContain("c9423c8bf43f5fb9d1d63a6c37a316302bbc1a84");
+    expect(rest.digest).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(gw.digest).toMatch(/^sha256:[a-f0-9]{64}$/);
   });
 });
 

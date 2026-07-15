@@ -2,7 +2,7 @@
   "name": "@0xhoneyjar/integrations-core",
   "version": "0.1.0",
   "private": true,
-  "description": "Freeside integrations building core — provider-behavior contracts + in-memory ingestion harness + Discord reference vertical. Every received event has a durable, explainable disposition (projected/ignored/quarantined/duplicate/conflict); zero silent drops. Wave-1 NON-PRODUCTION reference (in-memory, deterministic, no secrets/network). Sibling to @0xhoneyjar/medium-registry (presentation domain, unchanged).",
+  "description": "Freeside integrations core: typed provider-ingestion contracts, an in-memory reference store, Discord vertical, and fail-closed governance evidence.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",

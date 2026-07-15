@@ -86,6 +86,16 @@ describe("safeDigest + quarantineKey (§17.2/§17.8)", () => {
     expect(safeDigest(circular)).toMatch(/^[0-9a-f]{64}$/);
   });
 
+  test("oversized values with the same prefix and length remain distinct", () => {
+    const prefix = "x".repeat(70_000);
+    expect(safeDigest(`${prefix}a`)).not.toBe(safeDigest(`${prefix}b`));
+  });
+
+  test("safeDigest remains total for an uninspectable proxy", () => {
+    const hostile = new Proxy({}, { ownKeys: () => { throw new Error("nope"); } });
+    expect(() => safeDigest(hostile)).not.toThrow();
+  });
+
   test("quarantine identity is namespaced away from event keys", () => {
     const k = quarantineKey("discord", "tenant-A", "conn-1", "a".repeat(64));
     expect(k.startsWith("quarantine:")).toBe(true);

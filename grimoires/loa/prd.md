@@ -16,7 +16,7 @@ Federation slug (target): `integrations-api`
 
 `freeside-mediums` today is a sealed, runtime-free Effect-Schema registry answering one question — *"what can THIS chat medium render?"* — published as `@0xhoneyjar/medium-registry` (`packages/protocol`, v0.2.0) with two sibling packages (`cli-renderer`, `discord-renderer`). It has **little consumer gravity** and is, per the operator decision, **a seed rather than a permanent presentation-only boundary**.
 
-Freeside needs a governed way for **provider behavior** (Discord, Telegram, Luma) to enter the platform through **versioned, evidence-backed contracts** where **every received event has a durable, explainable disposition** — instead of renderers and persona engines each re-deriving provider assumptions ad hoc, and instead of ingestion that can silently drop or silently re-mean events.
+Freeside needs a governed way for **provider behavior** (Discord, Telegram, Luma) to enter the platform through **versioned, evidence-backed contracts** where **every received event has an explainable disposition and the production path persists it durably** — instead of renderers and persona engines each re-deriving provider assumptions ad hoc, and instead of ingestion that can silently drop or silently re-mean events. Wave 1 proves the contract in memory and remains explicitly non-production until the durable-store gate lands.
 
 The operator has **ratified** (do not re-litigate):
 

@@ -1,197 +1,79 @@
-# packages/protocol/beacon.yaml — mediums-api building beacon (BeaconV3)
+# integrations-api building identity — BeaconV3
 #
-# Per ADR-008 §D-11 (loa-freeside): identity-first building beacon. The
-# canonical live schema is loa-freeside/packages/beacon-schema/dist/src/
-# beacon-v3.js (BeaconV3Schema) — the `.ts` source in the same package is
-# stale; validate against `dist` until the source is refreshed.
+# Validated against the current canonical schema in
+# loa-freeside/packages/beacon-schema/src/beacon-v3.ts on 2026-07-15.
+# The checked-in JSON projection lives at /.well-known/beacon.json.
 #
-# This file is the source-of-truth authored shape. At deploy time the build
-# step (freeside-cli doctor / T2a) recomputes placeholder hashes:
-#   - sealed_schemas.<n>.hash           (full 64-hex sha256 of canonical JSON)
-#   - composes_with.<sibling>.tag       (TagName@semver+<sha256_prefix>)
-# and emits the resolved JSON to /.well-known/beacon.json.
-#
-# Prior art: an earlier .well-known/beacon.json lives on the feature branch
-# `feat/cmp-boundary-arch-sprint-3-cli-renderer-and-ctx-split` (commit
-# 41474ff). That earlier shape omitted composes_with / acvp_invariants /
-# capabilities pending port-schema sealing. This file supersedes it — the
-# acvp invariants below are GROUNDED against real test files in
-# packages/protocol/tests/ and packages/cli-renderer/tests/.
-#
-# Slug provenance: `mediums-api` is the canonical name per loa-freeside
-# registry (matches the `identity-api` / `score-api` / `storage-api` *-api
-# convention enforced by BeaconV3 schema `^[a-z][a-z0-9-]*-api$`). The
-# GitHub repo `freeside-mediums → mediums-api` rename is pending follow-up.
+# This beacon describes the building that this repository is becoming. The
+# GitHub repository rename and the loa-freeside registry change are separate,
+# cross-repository ratification steps; this branch does not claim either landed.
 
 schema_version: "3"
-slug: "mediums-api"
+slug: "integrations-api"
 publisher: "0xHoneyJar"
 
-# ─── Identity + boundaries (per ADR-008 §D-11) ───────────────────────────
-#
-# mediums-api is the L2 presentation-capability registry — the schema-shape
-# declarer that answers ONE question across the freeside-* family:
-#
-#   "What can THIS chat medium render?"
-#
-# Per the operator's vault doctrine on chat-medium-presentation-boundary,
-# substrate truth crosses a translation boundary to chat-medium presentation.
-# mediums-api models that boundary as a sealed `MediumCapability`
-# discriminated union (Discord webhook · Discord interaction · CLI minimal ·
-# Telegram stub). Renderers and persona engines consume the descriptors;
-# they do NOT live in this cell.
-
 is:
-  one_liner: "Sealed Effect-Schema registry of chat-medium presentation capabilities — substrate→presentation contract (L2)"
+  one_liner: "Evidence-backed provider ingress that normalizes external events into bounded Freeside observations"
   scope:
-    - "MediumCapability sealed Schema.Union — discriminated by `_tag` per architect lock A2"
-    - "DISCORD_WEBHOOK_DESCRIPTOR + DISCORD_INTERACTION_DESCRIPTOR — context split per SKP-001"
-    - "CLI_DESCRIPTOR + TELEGRAM_STUB — second-medium proof + future-medium placeholder"
-    - "Typed accessors: hasCapability, pickCapability, mediumIdOf over const singletons"
-    - "MediumCapabilityOverrides + TokenBinding shapes — character/medium binding contract"
-    - "cli-renderer: ANSI text renderer + ANSI injection guard (second-medium proof)"
+    - "Normalize versioned provider events into privacy-bounded Freeside observations"
+    - "Disposition events as projected, ignored, quarantined, duplicate, or conflict"
+    - "Publish source, coverage, and evidence artifacts for each provider contract"
+    - "Expose provider-keyed adapters behind one typed ingestion boundary"
+    - "Preserve medium-registry as a separate presentation compatibility surface"
 
 is_not:
-  - "Does NOT serve substrate truth — that lives in L1 cells (sonar-api, score-api, identity-api, inventory-api, storage-api)"
-  - "Does NOT mutate state — every export is read-side; no writes, no I/O, no on-chain calls"
-  - "Will NOT mix mediums in a single rendered output — each MediumCapability variant is sealed"
-  - "Refuses to call substrate cells directly — receives substrate output as input; downstream renderers do the fetch"
-  - "Does NOT implement renderers — it declares capabilities, not chat-medium adapters (the cli-renderer is the second-medium PROOF, not a Discord/Telegram renderer)"
-  - "Will NOT carry runtime data — outputs are TypeScript types + Effect Schemas evaluated at consumer build time"
-  - "Refuses to break the discriminated-union contract (architect lock A2) — additive minor bumps only (architect lock A7)"
+  - "Does NOT claim production durability until a transactional IngestionStore passes conformance"
+  - "Does NOT own provider credentials, Gateway sessions, webhooks, or transport lifecycle"
+  - "Does NOT resolve identity or write activity, score, inventory, or storage state"
+  - "Will NOT silently discard unknown, malformed, duplicate, or conflicting events"
+  - "Refuses to fold presentation rendering contracts into provider-ingestion contracts"
 
-# ─── Composition (sibling-building reads at runtime) ─────────────────────
-#
-# mediums-api is a pure presentation-contract layer — it RECEIVES substrate
-# output as input and TRANSFORMS it into platform-specific presentation
-# capabilities. It does NOT fetch from any sibling cell at runtime; in fact
-# it has no runtime at all (sealed schema + const singletons + accessor
-# functions, evaluated at consumer build time).
-#
-# The dependency direction inverts: characters / quests / loa-finn CONSUME
-# this registry, not the other way around. Belt direction (raw → derived →
-# integrated → presented): mediums-api sits at the presentation-contract
-# seam, downstream of all substrate cells, upstream of the L3 cmp-boundary
-# transforms that actually render.
-
+# No sibling runtime is called in wave 1. Downstream consumers are not declared
+# as composes_with dependencies: this field is reserved for a concrete sibling
+# Tag ABI (Name@semver+hash). Add one only when that typed port is ratified.
 composes_with: {}
 
-# ─── ACVP invariants (verifiability discipline per ACVP doctrine) ────────
-#
-# All proof_artifact paths are GROUNDED — each references a real test file
-# in packages/protocol/tests/ or packages/cli-renderer/tests/. Run
-# `bun test` at repo root to bind them in CI; doctor (T2a) will tag at
-# deploy time.
-
 acvp_invariants:
-  - id: schema_enforcement
-    scope: "Every MediumCapability variant round-trips Schema.decodeUnknownSync → re-encode identically; malformed input throws ParseError"
-    proof_artifact: "packages/protocol/tests/decode.test.ts"
+  - id: event_completeness
+    scope: "Every decoded event reaches a stored disposition or a surfaced typed/defect failure"
+    proof_artifact: "packages/integrations-core/tests/ingest.test.ts"
+    status: active
+    runtime_class: envelope
+  - id: idempotency
+    scope: "Tenant-scoped event identity makes re-delivery duplicate and payload drift conflict"
+    proof_artifact: "packages/integrations-core/tests/identity.test.ts"
+    status: active
+    runtime_class: envelope
   - id: state_machine_totality
-    scope: "Every CapabilityKey present on the type IS present (`in` operator) on every concrete descriptor variant — no shadowed silent gaps"
-    proof_artifact: "packages/protocol/tests/cross-repo-audit.test.ts"
+    scope: "The Discord admitted surface and adapter dispositions stay classification-complete"
+    proof_artifact: "packages/integrations-core/tests/coverage.test.ts"
+    status: active
+    runtime_class: construct-local
   - id: schema_enforcement
-    scope: "TokenBinding + MediumCapabilityOverrides decode against Effect.Schema with lowercase-hex contract + numeric tokenId discipline"
-    proof_artifact: "packages/protocol/tests/overrides.test.ts"
-  - id: schema_enforcement
-    scope: "cli-renderer output strips Discord-only artifacts (custom emoji / ephemeral flags) via assertNoDiscordArtifacts cross-medium audit"
-    proof_artifact: "packages/cli-renderer/tests/smoke.test.ts"
+    scope: "Envelopes, observations, dispositions, results, sources, coverage, and evidence decode"
+    proof_artifact: "packages/integrations-core/tests/schema.test.ts"
+    status: active
+    runtime_class: construct-local
 
-# ─── Sealed schemas (hash-verified protocol surface) ─────────────────────
-#
-# mediums-api seals its protocol surface as TypeScript Effect.Schema modules
-# rather than externalized JSON-Schema files (the contract is consumed via
-# `@0xhoneyjar/medium-registry` package imports, not by ajv-validating a
-# .schema.json). The two load-bearing TypeScript files below ARE the sealed
-# surface — doctor SHOULD hash the source files (the canonical-JSON
-# convention applies to JSON-Schema artifacts; for TS-source seals, doctor
-# hashes the file bytes). If/when a future cycle emits JSON-Schema
-# artifacts (mirroring score-api's packages/score-api-types/json/ pattern),
-# add those paths here and demote the .ts paths to non-sealed source.
-
-sealed_schemas:
-  - path: "packages/protocol/src/capability.ts"
-    hash: "0000000000000000000000000000000000000000000000000000000000000000"  # PLACEHOLDER — doctor recomputes
-    consumers:
-      - "freeside-characters"      # packages/persona-engine — composer + deliver layer
-      - "freeside-quests"          # packages/discord-renderer — interaction-context source-of-truth
-      - "loa-finn"                 # CLI surface — second-medium proof + substrate-fixture rendering
-      - "freeside-mediums"         # cli-renderer (sibling package in this repo)
-  - path: "packages/protocol/src/overrides.ts"
-    hash: "0000000000000000000000000000000000000000000000000000000000000000"  # PLACEHOLDER — doctor recomputes
-    consumers:
-      - "freeside-characters"      # CharacterMediumBinding consumer (Sprint 4 + cycle-3)
-      - "freeside-quests"          # TokenBinding consumer (per-token override flows)
-
-# ─── Capabilities (the public method surface) ─────────────────────────────
-#
-# Mirrors the `@0xhoneyjar/medium-registry` public API (packages/protocol/
-# src/index.ts) — the symbols cross-repo consumers import. No HTTP/RPC
-# endpoints; these are TypeScript exports. Grouped by purpose: descriptor
-# singletons (the const data) · accessors (the typed lookups) · narrow
-# Schema exports (for per-variant validation entry points).
+# BeaconV3 seals canonical-JSON schemas. Wave 1 exports Effect Schemas but has
+# not yet emitted canonical JSON-schema artifacts, so this is deliberately
+# empty rather than carrying placeholder or source-byte hashes.
+sealed_schemas: []
 
 capabilities:
-  # Descriptor singletons (architect lock A3 — CONST, not factories)
-  - DISCORD_WEBHOOK_DESCRIPTOR
-  - DISCORD_INTERACTION_DESCRIPTOR
-  - CLI_DESCRIPTOR
-  - TELEGRAM_STUB
-  # Typed accessors
-  - hasCapability
-  - pickCapability
-  - mediumIdOf
-  # Narrow Schema exports
+  - ingestUnknown
+  - RawEventEnvelope
+  - IngestionResult
+  - IngestionStore
+  - AdapterRegistry
+  - DiscordAdapterRegistryLayer
   - MediumCapability
-  - DiscordWebhookSchema
-  - DiscordInteractionSchema
-  - CliSchema
-  - TelegramSchema
-  # Override + binding shapes
-  - MediumCapabilityOverrides
-  - TokenBinding
-
-# ─── Cycle state (honest maturity signal) ─────────────────────────────────
-#
-# candidate (not active): cycle R sprint-3 landed v0.2.0 (Discord ctx split
-# per SKP-001) + cli-renderer 0.1.0 (second-medium proof) on main as commit
-# 10a7f69 (2026-05-05). Both packages are published to npm and consumed
-# cross-repo, BUT:
-#   - cli-renderer is sub-1.0 (additional medium descriptors expected before
-#     stabilizing)
-#   - TELEGRAM_STUB is a documented placeholder (full telegram-renderer
-#     cycle pending)
-#   - DISCORD_DESCRIPTOR retained as deprecated alias to webhook for
-#     back-compat (slated for removal in v1.0.0)
-#   - sealed-schemas path will likely shift if/when a future cycle emits
-#     externalized JSON-Schema artifacts
-# These together justify `candidate` over `active`. Promote to `active`
-# when the descriptor surface stabilizes at v1.0.0 + telegram-renderer
-# ships.
+  - renderVerifyMessageToDiscord
 
 cycle_state:
   status: candidate
-  since: "2026-05-05"           # cycle R sprint-3 main-landing (commit 10a7f69)
-  next_review: "2026-08-03"     # +90d, within the +180d doctor cap
+  since: "2026-07-15"
+  next_review: "2026-10-13"
 
-# ─── Transport (omitted) ──────────────────────────────────────────────────
-#
-# `mcp:` block intentionally OMITTED. BeaconV3 makes mcp `Schema.optional`
-# precisely for buildings like this one: per the V3 docstring, "a building
-# is declarable from the moment it has an identity, before it deploys a
-# callable endpoint" (§D-11.1).
-#
-# mediums-api is a presentation-contract LIBRARY — sealed Effect Schema +
-# typed accessors + const singletons, consumed via npm package imports at
-# consumer BUILD time. There is no HTTP / GraphQL / RPC / MCP runtime
-# server inside this repo today. Adding an MCP wrapper would be a future
-# cycle (e.g. "let an AI agent introspect the registry for capability
-# planning") — and at that point this block populates and the cycle_state
-# advances toward `active`.
-#
-# `cli:` block also OMITTED — this repo ships TS library packages, not a
-# binary CLI. The `cli-renderer` package is a library consumed by CLIs
-# (loa-finn), not itself a CLI.
-#
-# V3 DROPS V2-only `payment:` and `docs:` fields — they are MCP-tenant /
-# marketplace concerns, not building identity. Not included here.
+# No mcp or cli block yet: wave 1 is a library-level, non-production reference
+# vertical. Transport publication follows the durable-store and security gates.

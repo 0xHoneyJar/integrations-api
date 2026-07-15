@@ -267,7 +267,7 @@ Classification table = PRD §11.4 (bounded to wave-1 admitted surface). `normali
 ## 9. Compatibility & identity migration (FR-13, FR-14; R2, R3)
 
 - `@0xhoneyjar/medium-registry` **untouched**; `compat.test.ts` imports `MEDIUM_REGISTRY_VERSION`, `MediumCapability`, `DISCORD_WEBHOOK_DESCRIPTOR` and asserts they resolve (AC-2). No version bump.
-- Building identity recorded **additively + locally only** (FR-14, no loa-freeside mutation): a `README.md` in `packages/integrations-core` + a short note in root `README.md`/`CLAUDE.md`-adjacent docs stating the `integrations-api` slug evolution and that `mediums-api` remains a valid alias. **No** `.well-known/beacon.json` change on this branch (out of scope; parent factory owns the federation registry).
+- Building identity recorded **additively + locally only** (FR-14, no loa-freeside mutation): comprehensive root/package documentation plus `packages/protocol/beacon.yaml` and its generated `.well-known/beacon.json` projection declare `integrations-api`. The Beacon is validated against current BeaconV3 canon and carries no fabricated sibling Tag refs or placeholder seals. The parent `loa-freeside` registry and GitHub repository rename remain separate cross-repository ratification work.
 
 ## 10. Security & privacy (AC-7, INV-8, INV-10; PRD §11.5)
 

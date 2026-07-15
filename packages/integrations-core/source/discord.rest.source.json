@@ -1,17 +1,19 @@
 {
   "provider": "discord",
   "sourceClass": "openapi",
-  "url": "https://github.com/discord/discord-api-spec",
-  "ref": "specs/openapi.json + specs/openapi_preview.json (OpenAPI 3.1, Discord API v10)",
-  "retrievedAt": "2026-07-15T00:00:00Z",
+  "url": "https://raw.githubusercontent.com/discord/discord-api-spec/c9423c8bf43f5fb9d1d63a6c37a316302bbc1a84/specs/openapi.json",
+  "ref": "discord/discord-api-spec@c9423c8bf43f5fb9d1d63a6c37a316302bbc1a84:specs/openapi.json",
+  "digest": "sha256:cc131bdac72f6b7b682af16505d441427c4166b068ade022457f6fd90acb9281",
+  "retrievedAt": "2026-07-15T20:21:10Z",
   "generator": "design-level-no-generator",
   "generatorVersion": "wave-1",
   "discovered": [
-    "REST surface is design-level this wave; ingestion is Gateway-event driven. REST success is verified out of band per architecture §7."
+    "REST surface is design-level this wave; ingestion is Gateway-event driven.",
+    "The preview specification is deliberately excluded from the wave-1 contract."
   ],
   "patches": [],
   "validation": {
-    "semanticFocus": "Confirmed the official Discord OpenAPI repo publishes specs/openapi.json (stable) + specs/openapi_preview.json (preview, breaking changes without notice), OpenAPI 3.1, API v10.",
+    "semanticFocus": "Pinned and hashed the stable OpenAPI document at the official repository HEAD; the preview document is not admitted.",
     "sourceDomain": "github.com/discord/discord-api-spec (official Discord)"
   }
 }

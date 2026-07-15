@@ -2,8 +2,8 @@
  * `@0xhoneyjar/integrations-core` — Freeside integrations building core.
  *
  * Wave-1 NON-PRODUCTION reference vertical (in-memory, deterministic, no
- * secrets/network). Every received event has a durable, explainable disposition
- * (INV-1); zero silent drops.
+ * secrets/network). Every decoded event has an explainable disposition (INV-1);
+ * zero silent drops. Production durability remains a separate store gate.
  *
  * Public surface (grows per sprint):
  *   - protocol schemas (provider, envelope, observation, disposition, result,

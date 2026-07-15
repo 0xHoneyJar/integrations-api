@@ -4,6 +4,8 @@ node_modules/
 .claude.backup.*
 bun.lockb
 *.tsbuildinfo
+__pycache__/
+*.pyc
 
 # Build output
 dist/
@@ -27,3 +29,6 @@ npm-debug.log*
 
 # Test artifacts
 coverage/
+.run/*
+# br doctor per-run artifacts
+.doctor/

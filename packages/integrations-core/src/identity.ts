@@ -13,8 +13,6 @@
 import { createHash } from "node:crypto";
 import type { RawEventEnvelope } from "./protocol/envelope.js";
 
-const MAX_SAFE_INPUT_BYTES = 65536; // 64 KiB cap for malformed-input digests
-
 /**
  * Deterministic canonical JSON. Throws TypeError on non-serializable input so
  * the caller can convert to a quarantine rather than silently mis-hashing.
@@ -88,22 +86,27 @@ const typeTaggedString = (value: unknown): string => {
 };
 
 /**
- * Length-capped digest that NEVER throws — used for quarantine records of
- * malformed/non-serializable inputs (§17.8). Binds the ORIGINAL length into the
- * hash so distinct oversized inputs sharing a truncated prefix do not collide,
- * and uses a type-tagged fallback so non-serializable objects do not collapse
- * to a single "[object Object]" identity.
+ * Best-effort digest that NEVER throws — used for quarantine records of
+ * malformed/non-serializable inputs (§17.8). Hashes the complete representation
+ * so equal-length values with a shared prefix cannot collide because of local
+ * truncation, and uses a type-tagged fallback so ordinary non-serializable
+ * objects do not collapse to a single "[object Object]" identity.
  */
 export const safeDigest = (input: unknown): string => {
   let s: string;
   try {
     s = stableStringify(input);
   } catch {
-    s = typeof input === "string" ? input : typeTaggedString(input);
+    try {
+      s = typeof input === "string" ? input : typeTaggedString(input);
+    } catch {
+      // Exotic proxies and pathological nesting can defeat introspection. Keep
+      // the quarantine boundary total without evaluating attacker-controlled
+      // string coercion a third time.
+      s = `uninspectable:${typeof input}`;
+    }
   }
-  const originalLength = s.length;
-  if (s.length > MAX_SAFE_INPUT_BYTES) s = s.slice(0, MAX_SAFE_INPUT_BYTES);
-  return sha256Hex(`${originalLength}:${s}`);
+  return sha256Hex(s);
 };
 
 /**

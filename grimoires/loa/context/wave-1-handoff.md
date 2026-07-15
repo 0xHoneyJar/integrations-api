@@ -20,18 +20,24 @@ The reviewable first vertical: a new additive package `@0xhoneyjar/integrations-
   drops**. `NODE_ENV=production` fail-fast guard enforces the NON-PRODUCTION label.
 - **Discord reference vertical** — ADD/UPDATE/REMOVE→observations, MESSAGE_CREATE→ignored,
   unknown→quarantine, malformed→quarantine; PII excluded; facts verified vs primary sources.
-- **Governance harness** — pinned REST + Gateway source manifests, fail-closed
+- **Governance harness** — immutable REST pin + source digests, fail-closed
   coverage/evidence generation, durable-store ADR + skipped conformance target.
+- **Federation identity** — current-canon BeaconV3 source + generated machine projection declare
+  `integrations-api`; no placeholder seals or fabricated sibling Tag references.
 - **Continuation** — Telegram + Luma design + wave-2 blocking items (`integrations-continuation-plan.md`).
 
 ## Verification (all green)
 
-- typecheck 4/4 · build 4/4 · **387 pass / 5 skip / 0 fail** (324 baseline preserved, 0 regressions).
+- typecheck 4/4 · build 4/4 · **392 pass / 5 skip / 0 fail** (324 baseline preserved, 0 regressions).
+- Beacon source validated by current `loa-freeside` canon; local Beacon drift/proof-path gate 3/3.
+- Loa framework/config/integrity check green at **v1.196.0**.
 - Planning hardened through **3 headless-route Flatline reviews** (PRD/SDD/sprint — all APPROVED,
   6 high-consensus + 40 disputed + 46 blockers integrated).
-- Implementation hardened through a multi-model **code review** (review→fix loop applied).
+- Implementation hardened through a **DEGRADED 2/3-voice code review** (Grok review/skeptic routes failed;
+  the two effective voices plus final primary review applied the review→fix loop).
 - Security **audit APPROVED** (0 critical / 0 high; 3 documented Tier-2 deferrals).
-- 7 commits: `3dca8ae` (planning) → `f51c215` (review fixes).
+- Coherent staged commits cover Loa/config, planning, five implementation sprints, review fixes,
+  completion, and final Beacon/governance reconciliation.
 
 ## Unresolved provider limitations (Tier-2, named — not silent)
 
@@ -56,6 +62,6 @@ The reviewable first vertical: a new additive package `@0xhoneyjar/integrations-
 
 ## Awaiting operator GO
 
-All work is committed locally on `feat/integrations-api-simstim`. Per the keep-in-repo
+All work is local on `feat/integrations-api-simstim`. Per the keep-in-repo
 directive + the standing "Pending operator GO: push, open PR, merge" signal, I did **not**
 push or open a PR. Say the word to push + open a draft PR.

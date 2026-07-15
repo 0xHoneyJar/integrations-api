@@ -13,3 +13,4 @@ production = false
 # Match freeside-quests + freeside-characters convention.
 # bun:test discovers `*.test.ts` files automatically.
 # (No preload — bun:test default behavior is sufficient.)
+pathIgnorePatterns = ["grimoires/loa/context/freeside-integrations-kit/**"]

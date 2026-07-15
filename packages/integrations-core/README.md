@@ -2,7 +2,7 @@
 
 Core of the Freeside **integrations** building (federation slug `integrations-api`) —
 the evolution of `freeside-mediums`. Provider behavior (Discord first) enters Freeside
-through a versioned, evidence-backed contract, and **every received event has a durable,
+through a versioned, evidence-backed contract, and **every decoded event has an
 explainable disposition** — `projected` / `ignored` / `quarantined` / `duplicate` /
 `conflict`, with zero silent drops.
 

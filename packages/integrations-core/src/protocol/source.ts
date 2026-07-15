@@ -27,8 +27,10 @@ export const SourceManifest = Schema.Struct({
   sourceClass: SourceClass,
   url: Schema.NonEmptyString,
   ref: Schema.NonEmptyString, // commit / tag / spec filename pin
-  digest: Schema.optional(Schema.String),
-  retrievedAt: Schema.NonEmptyString,
+  digest: Schema.String.pipe(Schema.pattern(/^sha256:[a-f0-9]{64}$/)),
+  retrievedAt: Schema.String.pipe(
+    Schema.pattern(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/),
+  ),
   generator: Schema.String,
   generatorVersion: Schema.String,
   discovered: Schema.Array(Schema.String),
