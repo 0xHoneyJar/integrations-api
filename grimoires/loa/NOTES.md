@@ -65,3 +65,15 @@ Evolving `freeside-mediums` → the Freeside **integrations** building (operator
 **Design**: new additive package `@0xhoneyjar/integrations-core` (in-memory, deterministic, no secrets/network this wave); `@0xhoneyjar/medium-registry` untouched (compat = presentation domain). 5 bounded sprints (beads `mediums-api-sprint-1..5`). Telegram/Luma = written continuation only.
 
 Flatline route evidence + integration decisions: `.run/flatline-evidence/`.
+
+**Implementation (5 sprints, consolidated `/run sprint-plan` mode)** — all COMPLETE + green:
+- New package `@0xhoneyjar/integrations-core` (private, NON-PRODUCTION, in-memory, offline).
+- typecheck 4/4 · build 4/4 · **387 pass / 5 skip / 0 fail** (324 baseline preserved).
+- Multi-model **code review** on the impl diff → review→fix loop (safeDigest collision hardening + `NODE_ENV=production` fail-fast guard on the in-memory store).
+- Security **audit APPROVED** (0 critical/high; 3 documented Tier-2 deferrals) — `a2a/sprint-plan/auditor-consolidated.md`.
+- 7 commits `3dca8ae`→`f51c215`; beads `mediums-api-sprint-1..5` closed; COMPLETED markers written.
+- **Governed handoff**: `grimoires/loa/context/wave-1-handoff.md`. Next ratification decision = the **publish gate** (keep private until durable store, recommended).
+- **Push/PR pending operator GO** (keep-in-repo directive) — branch `feat/integrations-api-simstim` ready.
+
+### Session Continuity
+- Wave-1 done locally. To ship: operator GO → push + draft PR. Wave-2 starts from `integrations-continuation-plan.md` (durable store first).

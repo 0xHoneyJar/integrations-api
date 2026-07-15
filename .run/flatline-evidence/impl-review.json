@@ -1,0 +1,261 @@
+{
+  "consensus_summary": {
+    "high_consensus_count": 0,
+    "disputed_count": 12,
+    "low_value_count": 0,
+    "blocker_count": 8,
+    "model_agreement_percent": 0,
+    "models": 3,
+    "tertiary_items": 0,
+    "confidence": "single_model"
+  },
+  "high_consensus": [],
+  "disputed": [
+    {
+      "id": "IMP-001",
+      "description": "Strong reproducibility and provenance improvement with modest implementation cost. Immutable digests directly strengthen drift detection and evidence-backed publication, provided the digest semantics clearly distinguish source revision from retrieved artifact integrity.",
+      "gpt_score": 0,
+      "opus_score": 910,
+      "tertiary_score": 890,
+      "delta": 910,
+      "average_score": 910,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-002",
+      "description": "Closes a material observability gap between the runtime catch-all behavior and the declared coverage surface. The implementation and regression-test cost are low, while the benefit to the zero-silent-drop invariant is substantial.",
+      "gpt_score": 0,
+      "opus_score": 925,
+      "tertiary_score": 875,
+      "delta": 925,
+      "average_score": 925,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-003",
+      "description": "A compatibility test reading the wrong manifest can pass without validating the claimed dependency, making this a potentially vacuous gate. The path should be resolved from the installed package or otherwise proven to reference the intended package.",
+      "gpt_score": 0,
+      "opus_score": 955,
+      "tertiary_score": 905,
+      "delta": 955,
+      "average_score": 955,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-004",
+      "description": "Manual evidence gating is too easy to bypass for a governance artifact. Coupling generation to successful tests and checking committed artifacts against deterministic builder output provides high assurance at moderate CI and maintenance cost.",
+      "gpt_score": 0,
+      "opus_score": 940,
+      "tertiary_score": 885,
+      "delta": 940,
+      "average_score": 940,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-005",
+      "description": "Concurrency semantics should be proven for quarantine because it participates in the same duplicate and conflict guarantees as commit. A parallel atomicity test is focused, inexpensive, and likely to expose backend substitution defects.",
+      "gpt_score": 0,
+      "opus_score": 845,
+      "tertiary_score": 835,
+      "delta": 845,
+      "average_score": 845,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-006",
+      "description": "The unused code creates taxonomy drift, but the best resolution depends on intended conflict semantics. Removing the premature reason code is cheap; emitting it requires a deliberate telemetry contract and should not be added merely to make the enum appear used.",
+      "gpt_score": 0,
+      "opus_score": 625,
+      "tertiary_score": 680,
+      "delta": 625,
+      "average_score": 625,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-007",
+      "description": "Governance manifests merit closed, semantically constrained schemas. A literal disposition union plus conditional reason-code validation prevents misleading artifacts, though migration should preserve extensibility through explicit schema versioning rather than free-form strings.",
+      "gpt_score": 0,
+      "opus_score": 855,
+      "tertiary_score": 745,
+      "delta": 855,
+      "average_score": 855,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-008",
+      "description": "The normalization decision can materially affect downstream membership graphs, and documenting it avoids provider-specific ambiguity. The correct inclusion policy is domain-dependent, so this should begin with an explicit contract decision followed by fixtures.",
+      "gpt_score": 0,
+      "opus_score": 715,
+      "tertiary_score": 640,
+      "delta": 715,
+      "average_score": 715,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-009",
+      "description": "Accepting arbitrary nonempty timestamp strings creates avoidable replay and ordering failures. Schema-level validation and negative tests offer clear value, although the contract must define whether offsets, fractional seconds, and normalization to UTC are required.",
+      "gpt_score": 0,
+      "opus_score": 825,
+      "tertiary_score": 615,
+      "delta": 825,
+      "average_score": 825,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-010",
+      "description": "Cross-tenant collapse of identical malformed payloads can obscure attribution and security signals. The policy should be explicit, and safely recoverable tenant or connection context should participate in quarantine identity without trusting undecoded payload fields.",
+      "gpt_score": 0,
+      "opus_score": 805,
+      "tertiary_score": 720,
+      "delta": 805,
+      "average_score": 805,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-011",
+      "description": "Neutral semantics reduce the risk that downstream systems infer leave, kick, or ban from an indistinguishable provider event. Adding an explicit unknown revocation kind is less disruptive than renaming the observation and leaves room for later enrichment.",
+      "gpt_score": 0,
+      "opus_score": 745,
+      "tertiary_score": 590,
+      "delta": 745,
+      "average_score": 745,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-012",
+      "description": "Executable shared backend contracts would materially reduce wave-2 interpretation drift and make durable-store adoption safer. The immediate value is deferred and requires careful fixture design, but preparing reusable conformance helpers is worthwhile before multiple implementations emerge.",
+      "gpt_score": 0,
+      "opus_score": 680,
+      "tertiary_score": 455,
+      "delta": 680,
+      "average_score": 680,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    }
+  ],
+  "low_value": [],
+  "blockers": [
+    {
+      "id": "SKP-006",
+      "concern": "Discord Gateway events have no native durable per-event ID; idempotency fully depends on transport-assigned upstreamEventId, but wave-1 provides no transport implementation or conformance tests for ID assignment across reconnect, shard migration, or replay.",
+      "severity": "HIGH",
+      "severity_score": 750,
+      "why_matters": "Duplicate member events after reconnect or incorrect ID reuse can collapse distinct deliveries into Duplicate (under-processing) or Conflict (over-quarantine), breaking membership graph correctness with no explainable recovery.",
+      "location": "src/protocol/envelope.ts §17.1; KNOWN_LIMITATIONS upstreamEventId; src/identity.ts idempotencyKey",
+      "recommendation": "Specify transport ID assignment contract (e.g., shardId:sequence or gatewayEventId from envelope metadata) in an ADR; add Tier-2 transport conformance tests for reconnect/replay before production readiness.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-004",
+      "concern": "Evidence receipt generation is bypassable via INTEGRATIONS_TESTS_PASSED=1 environment variable without proving test execution, and staticResults is a free-form self-attested string rather than a verifiable artifact (test log hash, CI run ID, or signed attestation).",
+      "severity": "HIGH",
+      "severity_score": 720,
+      "why_matters": "CI misconfiguration, local developer mistake, or malicious override can emit a valid-looking evidence receipt claiming tests passed, creating false governance confidence for autonomous publish/approve workflows (INV-5).",
+      "location": "scripts/build-coverage.ts; src/coverage-build.ts assertTestsPassed; EvidenceReceipt.staticResults schema",
+      "recommendation": "Remove env-var bypass in favor of CI-only signed attestation or artifact input (e.g., junit/coverage blob hash); bind evidence generation to a verified test-run artifact and reject generation when artifact is absent or stale.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-001",
+      "concern": "Malformed-input quarantine identities can collide because safeDigest falls back to String(input); many non-serializable objects become the identical string \"[object Object]\". The 64 KiB character truncation also permits distinct oversized inputs sharing a prefix to collide.",
+      "severity": "HIGH",
+      "severity_score": 790,
+      "why_matters": "Distinct malformed events can be reported as Duplicate and lose independent forensic disposition records, contradicting the zero-silent-drop and non-colliding quarantine claims.",
+      "location": "src/identity.ts safeDigest; src/ingest.ts malformed-envelope and malformed-payload quarantine paths",
+      "recommendation": "Implement a bounded, deterministic, cycle-aware serializer that includes types, keys, and truncation metadata before hashing. Add tests for BigInt objects, circular objects, shared references, and inputs differing only after the size cap.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-002",
+      "concern": "Quarantine identity is derived only from tenant/provider/connection and payload digest. Separate deliveries with identical malformed payloads, missing IDs, hash mismatches, or unknown event types collapse into one Duplicate record.",
+      "severity": "HIGH",
+      "severity_score": 760,
+      "why_matters": "The store cannot distinguish repeated delivery from independent occurrences, count incidents accurately, or preserve the promised disposition for every received event.",
+      "location": "src/identity.ts quarantineKey; src/ingest.ts commitQuarantine and ingestUnknown",
+      "recommendation": "Give each receipt a transport delivery identity or occurrence identifier while maintaining a separate fingerprint for grouping. Define explicit deduplication semantics per quarantine reason and persist occurrence counts/timestamps atomically.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-002",
+      "concern": "Sticky first-write-wins semantics permanently block superseding a poison-pill or corrupted first commit: same idempotency key with a different digest yields Conflict with no recovery path until the durable-store ADR implements audited supersession.",
+      "severity": "CRITICAL",
+      "severity_score": 830,
+      "why_matters": "If transport mis-assigns an upstreamEventId, a malformed payload commits first, or an adapter bug produces a wrong digest, all subsequent legitimate deliveries for that key are stuck in Conflict with no automated remediation—membership graph drift with no fix without manual store surgery.",
+      "location": "src/services.ts commit conflict branch; KNOWN_LIMITATIONS; tests/durable-store-contract.skip.test.ts conflict recovery test (skipped)",
+      "recommendation": "Define and implement conflict-recovery workflow before any production label: audited supersede operation, operator tooling, and un-skip the durable-store conflict-recovery conformance test against the real backend.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-004",
+      "concern": "The evidence generator accepts a caller-supplied --tests-passed flag or environment variable without executing tests or binding the receipt to a test run, commit, artifact digest, or timestamp.",
+      "severity": "HIGH",
+      "severity_score": 730,
+      "why_matters": "A failing or untested build can emit an evidence receipt claiming \"typecheck + tests green,\" undermining the advertised fail-closed governance control.",
+      "location": "scripts/build-coverage.ts; src/coverage-build.ts discordEvidenceReceipt and assertTestsPassed",
+      "recommendation": "Have one trusted CI workflow run typecheck/tests and generate evidence only after successful commands. Bind the receipt to commit SHA, test-report digest, source digests, and generation time; do not expose an unauthenticated boolean bypass.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-001",
+      "concern": "The public package exports InMemoryIngestionStoreLayer with no runtime guard preventing production use; README and evidence label non-production, but consumers can wire the in-memory store into a live path without compile-time or runtime enforcement.",
+      "severity": "CRITICAL",
+      "severity_score": 860,
+      "why_matters": "A downstream service could ship crash-unsafe, non-durable, single-process deduplication as production ingestion, losing events on restart and allowing duplicate processing across replicas—violating the zero-silent-drops and idempotency guarantees under real deployment.",
+      "location": "src/index.ts exports; src/services.ts InMemoryIngestionStoreLayer; evidence/discord.evidence.json productionReadiness",
+      "recommendation": "Gate production store behind an explicit opt-in (separate entrypoint or runtime assertion), or fail fast when NODE_ENV=production and no durable IngestionStore layer is provided; keep in-memory layer test-only or unexported from the public barrel.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-003",
+      "concern": "Wave-1 defers all transport security: no Ed25519 webhook signature verification, no Gateway session/sequence identity, no resume/replay gap handling—yet the ingestion spine is otherwise structured as if transport-assigned upstreamEventId is trustworthy.",
+      "severity": "CRITICAL",
+      "severity_score": 880,
+      "why_matters": "Connecting this spine to live Discord without Tier-2 transport allows forged or replayed events to receive durable dispositions; incorrect or reused delivery IDs break idempotency across reconnects and backfill, producing silent graph corruption masked as Duplicate or Conflict.",
+      "location": "KNOWN_LIMITATIONS §17.7; src/protocol/envelope.ts upstreamEventId; evidence liveResults tier-2-deferred",
+      "recommendation": "Block production approval until Tier-2 transport owns identity assignment (Gateway sequence/session binding), signature verification, and replay semantics; document required transport contract and add failing integration tests that assert unsigned/unsequenced input is rejected.",
+      "source": "tertiary_skeptic"
+    }
+  ],
+  "degraded": false,
+  "degraded_model": null,
+  "confidence": "single_model",
+  "phase": "pr",
+  "document": ".run/flatline-evidence/impl-diff.patch",
+  "domain": "software development",
+  "tertiary_model_used": "grok-headless",
+  "tertiary_status": "active",
+  "execution": {
+    "mode": "hitl",
+    "mode_reason": "Simstim workflow active (.run/simstim-state.json state=RUNNING)",
+    "run_id": null
+  },
+  "timestamp": "2026-07-15T19:51:41Z",
+  "metrics": {
+    "total_latency_ms": 120000,
+    "cost_cents": 0,
+    "cost_usd": 0
+  }
+}
