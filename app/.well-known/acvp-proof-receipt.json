@@ -1,34 +1,34 @@
 [
   {
-    "slug": "mediums-api",
-    "invariant_id": "schema_enforcement",
-    "proof_artifact": "packages/protocol/tests/decode.test.ts",
+    "slug": "integrations-api",
+    "invariant_id": "event_completeness",
+    "proof_artifact": "packages/integrations-core/tests/ingest.test.ts",
     "test_runner": "bun",
-    "passed_at": "2026-05-31T03:10:48.146Z",
-    "commit_sha": "06e7715ece8dfa4ab5875f458ce14f6463659059"
+    "passed_at": "2026-07-15T20:29:06.454Z",
+    "commit_sha": "4367a77f036eb19a31b9eea2111c4c8eab3064fe"
   },
   {
-    "slug": "mediums-api",
+    "slug": "integrations-api",
+    "invariant_id": "idempotency",
+    "proof_artifact": "packages/integrations-core/tests/identity.test.ts",
+    "test_runner": "bun",
+    "passed_at": "2026-07-15T20:29:06.454Z",
+    "commit_sha": "4367a77f036eb19a31b9eea2111c4c8eab3064fe"
+  },
+  {
+    "slug": "integrations-api",
     "invariant_id": "state_machine_totality",
-    "proof_artifact": "packages/protocol/tests/cross-repo-audit.test.ts",
+    "proof_artifact": "packages/integrations-core/tests/coverage.test.ts",
     "test_runner": "bun",
-    "passed_at": "2026-05-31T03:10:48.146Z",
-    "commit_sha": "06e7715ece8dfa4ab5875f458ce14f6463659059"
+    "passed_at": "2026-07-15T20:29:06.454Z",
+    "commit_sha": "4367a77f036eb19a31b9eea2111c4c8eab3064fe"
   },
   {
-    "slug": "mediums-api",
+    "slug": "integrations-api",
     "invariant_id": "schema_enforcement",
-    "proof_artifact": "packages/protocol/tests/overrides.test.ts",
+    "proof_artifact": "packages/integrations-core/tests/schema.test.ts",
     "test_runner": "bun",
-    "passed_at": "2026-05-31T03:10:48.146Z",
-    "commit_sha": "06e7715ece8dfa4ab5875f458ce14f6463659059"
-  },
-  {
-    "slug": "mediums-api",
-    "invariant_id": "schema_enforcement",
-    "proof_artifact": "packages/cli-renderer/tests/smoke.test.ts",
-    "test_runner": "bun",
-    "passed_at": "2026-05-31T03:10:48.146Z",
-    "commit_sha": "06e7715ece8dfa4ab5875f458ce14f6463659059"
+    "passed_at": "2026-07-15T20:29:06.454Z",
+    "commit_sha": "4367a77f036eb19a31b9eea2111c4c8eab3064fe"
   }
 ]
