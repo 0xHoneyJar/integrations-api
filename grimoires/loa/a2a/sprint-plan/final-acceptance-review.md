@@ -20,6 +20,7 @@ Reviewer: primary engineering agent, after consolidated Flatline implementation 
 | High | Plain `bun test` discovered the imported Effect 4 reference kit and failed on `@effect/vitest` | Added an explicit Bun test-discovery exclusion for the imported reference kit; the repository default now runs only live package tests |
 | Medium | Root README and project kernel overstated durability and still centered the old building | Rewrote both around the non-production integrations boundary, compatibility packages, Freeside seams, and production gates |
 | Medium | Updated Loa rejected the old NOTES shape | Added required structured-memory sections and recorded the wave-1 decisions and blockers |
+| Medium | Initial Beacon used the ACVP `event_completeness` vocabulary without a cluster `eventsPin` | Removed the false envelope-bound claim; kept proven ingestion guarantees as construct-local idempotency/state-machine invariants |
 
 ## Verification fence
 

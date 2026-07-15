@@ -34,16 +34,11 @@ is_not:
 composes_with: {}
 
 acvp_invariants:
-  - id: event_completeness
-    scope: "Every decoded event reaches a stored disposition or a surfaced typed/defect failure"
-    proof_artifact: "packages/integrations-core/tests/ingest.test.ts"
-    status: active
-    runtime_class: envelope
   - id: idempotency
     scope: "Tenant-scoped event identity makes re-delivery duplicate and payload drift conflict"
     proof_artifact: "packages/integrations-core/tests/identity.test.ts"
     status: active
-    runtime_class: envelope
+    runtime_class: construct-local
   - id: state_machine_totality
     scope: "The Discord admitted surface and adapter dispositions stay classification-complete"
     proof_artifact: "packages/integrations-core/tests/coverage.test.ts"
