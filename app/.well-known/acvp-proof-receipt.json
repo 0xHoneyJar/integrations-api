@@ -4,23 +4,23 @@
     "invariant_id": "idempotency",
     "proof_artifact": "packages/integrations-core/tests/identity.test.ts",
     "test_runner": "bun",
-    "passed_at": "2026-07-15T20:30:25.794Z",
-    "commit_sha": "d24562c1e80e489a4aa962be032d1b8c37aaa28e"
+    "passed_at": "2026-07-15T20:40:55.676Z",
+    "commit_sha": "900b956e950b865a8025826d382e4863abc8a06c"
   },
   {
     "slug": "integrations-api",
     "invariant_id": "state_machine_totality",
     "proof_artifact": "packages/integrations-core/tests/coverage.test.ts",
     "test_runner": "bun",
-    "passed_at": "2026-07-15T20:30:25.794Z",
-    "commit_sha": "d24562c1e80e489a4aa962be032d1b8c37aaa28e"
+    "passed_at": "2026-07-15T20:40:55.676Z",
+    "commit_sha": "900b956e950b865a8025826d382e4863abc8a06c"
   },
   {
     "slug": "integrations-api",
     "invariant_id": "schema_enforcement",
     "proof_artifact": "packages/integrations-core/tests/schema.test.ts",
     "test_runner": "bun",
-    "passed_at": "2026-07-15T20:30:25.794Z",
-    "commit_sha": "d24562c1e80e489a4aa962be032d1b8c37aaa28e"
+    "passed_at": "2026-07-15T20:40:55.676Z",
+    "commit_sha": "900b956e950b865a8025826d382e4863abc8a06c"
   }
 ]
