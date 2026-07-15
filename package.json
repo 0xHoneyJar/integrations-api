@@ -11,7 +11,8 @@
   "workspaces": [
     "packages/protocol",
     "packages/cli-renderer",
-    "packages/discord-renderer"
+    "packages/discord-renderer",
+    "packages/integrations-core"
   ],
   "scripts": {
     "prepare": "./scripts/prepare-effect.sh",
