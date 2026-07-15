@@ -1,7 +1,23 @@
 {
-  "framework_version": "1.39.1",
+  "framework_version": "1.196.0",
   "schema_version": 2,
-  "last_sync": null,
+  "last_sync": "2026-07-15T18:39:39Z",
+  "current": {
+    "version": "1.196.0",
+    "ref": "main",
+    "type": "latest",
+    "commit": "c4ed2f2733fe507703df45bed3eee229511ada04",
+    "updated_at": "2026-07-15T18:39:39Z"
+  },
+  "history": [
+    {
+      "version": "1.39.1",
+      "ref": "v1.39.1",
+      "type": "tag",
+      "commit": "unknown",
+      "updated_at": "2026-07-15T18:39:39Z"
+    }
+  ],
   "zones": {
     "system": ".claude",
     "state": [
