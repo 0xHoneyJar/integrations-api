@@ -1,9 +1,18 @@
 ---
 name: continuous-learning
-description: |
-  Autonomous skill extraction from debugging discoveries. Activates when agents
-  find non-obvious solutions through investigation, experimentation, or trial-and-error.
-  Captures these discoveries as reusable skills for future sessions.
+description: "Autonomous skill extraction from debugging discoveries. Activates when agents find non-obvious solutions through investigation, experimentation, or trial-and-error. Captures these discoveries as reusable skills for future sessions."
+role: implementation
+capabilities:
+  schema_version: 1
+  read_files: true
+  search_code: true
+  write_files: true
+  execute_commands: false
+  web_access: false
+  user_interaction: false
+  agent_spawn: false
+  task_management: false
+cost-profile: moderate
 author: Loa Framework
 version: 1.0.0
 loa-agent-scope:

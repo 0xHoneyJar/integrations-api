@@ -27,10 +27,16 @@ set -euo pipefail
 # Configuration
 # =============================================================================
 
-PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-CONFIG_FILE="${PROJECT_ROOT}/.loa.config.yaml"
-LOA_DIR="${PROJECT_ROOT}/.loa"
-QMD_DIR="${LOA_DIR}/qmd"
+# Path vars honor pre-set env overrides (${VAR:-default}) so tests can redirect
+# config + index dir to a scratch tree; unset in production, defaults apply.
+PROJECT_ROOT="${PROJECT_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+CONFIG_FILE="${CONFIG_FILE:-${PROJECT_ROOT}/.loa.config.yaml}"
+LOA_DIR="${LOA_DIR:-${PROJECT_ROOT}/.loa}"
+# Capture a TRUSTED env-set index dir (operator/test) BEFORE defaulting, so
+# load_config can let it win over the config's index_dir (the config value is
+# untrusted and stays subject to the relative/traversal security checks).
+_QMD_DIR_ENV="${QMD_DIR:-}"
+QMD_DIR="${QMD_DIR:-${LOA_DIR}/qmd}"
 MTIME_CACHE="${QMD_DIR}/.mtime_cache"
 FAILURE_COUNT_FILE="${QMD_DIR}/.failure_count"
 
@@ -87,25 +93,34 @@ load_config() {
         QMD_BINARY="qmd"
     fi
 
-    # Load index directory
-    local config_dir
-    config_dir=$(yq eval '.memory.qmd.index_dir // ".loa/qmd"' "$CONFIG_FILE" 2>/dev/null || echo ".loa/qmd")
+    # A trusted env-set QMD_DIR (operator/test) wins outright: the config's
+    # index_dir is then unused, so skip loading AND validating it — otherwise
+    # a benign config value trips the SECURITY warnings on stderr for a dir the
+    # script never touches (and, under bats, that stderr pollutes query JSON).
+    if [[ -n "$_QMD_DIR_ENV" ]]; then
+        QMD_DIR="$_QMD_DIR_ENV"
+    else
+        # Load index directory from config (untrusted → sanitized).
+        local config_dir
+        config_dir=$(yq eval '.memory.qmd.index_dir // ".loa/qmd"' "$CONFIG_FILE" 2>/dev/null || echo ".loa/qmd")
 
-    # SECURITY (MEDIUM-004): Validate config path - no traversal or absolute paths
-    if [[ "$config_dir" == *".."* ]]; then
-        log_error "SECURITY: Config index_dir contains path traversal, using default"
-        config_dir=".loa/qmd"
+        # SECURITY (MEDIUM-004): Validate config path - no traversal or absolute paths
+        if [[ "$config_dir" == *".."* ]]; then
+            log_error "SECURITY: Config index_dir contains path traversal, using default"
+            config_dir=".loa/qmd"
+        fi
+        if [[ "$config_dir" == /* ]]; then
+            log_error "SECURITY: Config index_dir should be relative, using default"
+            config_dir=".loa/qmd"
+        fi
+        if [[ "$config_dir" =~ [\$\`\|\;\&] ]]; then
+            log_error "SECURITY: Config index_dir contains shell metacharacters, using default"
+            config_dir=".loa/qmd"
+        fi
+        QMD_DIR="${PROJECT_ROOT}/${config_dir}"
     fi
-    if [[ "$config_dir" == /* ]]; then
-        log_error "SECURITY: Config index_dir should be relative, using default"
-        config_dir=".loa/qmd"
-    fi
-    if [[ "$config_dir" =~ [\$\`\|\;\&] ]]; then
-        log_error "SECURITY: Config index_dir contains shell metacharacters, using default"
-        config_dir=".loa/qmd"
-    fi
-
-    QMD_DIR="${PROJECT_ROOT}/${config_dir}"
+    MTIME_CACHE="${QMD_DIR}/.mtime_cache"
+    FAILURE_COUNT_FILE="${QMD_DIR}/.failure_count"
 
     return 0
 }
@@ -206,7 +221,7 @@ get_collections() {
         return
     fi
 
-    yq eval '.memory.qmd.collections // []' "$CONFIG_FILE" 2>/dev/null || echo "[]"
+    yq eval -o json '.memory.qmd.collections // []' "$CONFIG_FILE" 2>/dev/null || echo "[]"
 }
 
 # Create a collection
@@ -241,9 +256,19 @@ index_collection() {
     local collection_dir="${QMD_DIR}/${name}"
     mkdir -p "$collection_dir"
 
-    # Resolve and validate path (HIGH-003 fix: prevent path traversal)
-    local full_path
-    full_path=$(realpath "${PROJECT_ROOT}/${path}" 2>/dev/null) || {
+    # Resolve and validate path (HIGH-003 fix: prevent path traversal).
+    # A relative path is resolved against PROJECT_ROOT; an absolute path is
+    # taken as-is (prepending PROJECT_ROOT to an absolute path double-roots it
+    # into a non-existent location). Either way the within-PROJECT_ROOT check
+    # below is the actual boundary control — an absolute path that escapes the
+    # repo is still blocked.
+    local full_path candidate
+    if [[ "$path" == /* ]]; then
+        candidate="$path"
+    else
+        candidate="${PROJECT_ROOT}/${path}"
+    fi
+    full_path=$(realpath "$candidate" 2>/dev/null) || {
         log_warn "Invalid path: $path"
         return 1
     }
@@ -259,7 +284,18 @@ index_collection() {
         return 1
     fi
 
-    # Find files matching includes
+    # Register collection with QMD if available (BUG-359 fix)
+    # QMD operates at collection level, not per-file
+    local qmd_available=false
+    if check_qmd_available; then
+        qmd_available=true
+        # Register collection (idempotent — QMD ignores if already exists)
+        local first_mask
+        first_mask=$(echo "$includes" | jq -r '.[0] // "*.md"' 2>/dev/null || echo "*.md")
+        "$QMD_BINARY" collection add "$full_path" --name "$name" --mask "**/$first_mask" 2>/dev/null || true
+    fi
+
+    # Find files matching includes and track mtime changes
     local indexed=0
     local skipped=0
 
@@ -283,24 +319,18 @@ index_collection() {
 
             # Check if needs reindex
             if [[ "$force" == "true" ]] || needs_reindex "$real_file" "$name"; then
-                # Index with QMD (if available and enabled)
-                if check_qmd_available; then
-                    if "$QMD_BINARY" index "$real_file" --collection "$collection_dir" 2>/dev/null; then
-                        update_mtime_cache "$real_file" "$name"
-                        ((indexed++))
-                    else
-                        track_failure
-                    fi
-                else
-                    # Fallback: Just track the file for grep-based search
-                    update_mtime_cache "$real_file" "$name"
-                    ((indexed++))
-                fi
+                update_mtime_cache "$real_file" "$name"
+                indexed=$((indexed + 1))
             else
-                ((skipped++))
+                skipped=$((skipped + 1))
             fi
         done < <(find "$full_path" -type f -name "$pattern" -print0 2>/dev/null)
     done < <(echo "$includes" | jq -r '.[]' 2>/dev/null || echo "*.md")
+
+    # Re-index via QMD after tracking changes (BUG-359 fix)
+    if [[ "$qmd_available" == "true" && $indexed -gt 0 ]]; then
+        "$QMD_BINARY" update 2>/dev/null || track_failure
+    fi
 
     log_info "Collection '$name': indexed $indexed files, skipped $skipped unchanged"
     return 0
@@ -325,12 +355,12 @@ query_collection() {
     fi
 
     if check_qmd_available; then
-        # Use QMD for semantic search
+        # Use QMD for semantic search (BUG-359 fix: use name, not dir path)
         "$QMD_BINARY" search "$query" \
-            --collection "$collection_dir" \
-            --top-k "$top_k" \
-            --threshold "$threshold" \
-            --json 2>/dev/null || echo "[]"
+            --collection "$collection" \
+            --limit "$top_k" \
+            --min-score "$threshold" \
+            --format json 2>/dev/null || echo "[]"
     else
         # Fallback: grep-based search
         local cache_file="${collection_dir}/.mtime_cache"
@@ -457,7 +487,7 @@ cmd_sync() {
 
         log_info "Syncing collection: $name"
         if index_collection "$name" "$path" "$includes" "$force"; then
-            ((synced++))
+            synced=$((synced + 1))
         fi
     done < <(echo "$collections" | jq -c '.[]' 2>/dev/null)
 

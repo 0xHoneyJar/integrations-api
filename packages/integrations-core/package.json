@@ -1,0 +1,54 @@
+{
+  "name": "@0xhoneyjar/integrations-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Freeside integrations core: typed provider-ingestion contracts, an in-memory reference store, Discord vertical, and fail-closed governance evidence.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "source",
+    "coverage",
+    "evidence",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b --force",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "coverage:build": "bun scripts/build-coverage.ts",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0xHoneyJar/freeside-mediums.git",
+    "directory": "packages/integrations-core"
+  },
+  "keywords": [
+    "freeside",
+    "integrations",
+    "discord",
+    "ingestion",
+    "disposition",
+    "effect",
+    "governance"
+  ],
+  "peerDependencies": {
+    "effect": ">=3.21.2 <4"
+  },
+  "devDependencies": {
+    "@0xhoneyjar/medium-registry": "workspace:*",
+    "@types/bun": "latest",
+    "effect": ">=3.21.2 <4",
+    "typescript": "^5.7.0"
+  }
+}

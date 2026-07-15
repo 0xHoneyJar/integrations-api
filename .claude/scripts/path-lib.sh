@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# path-lib.sh - Configurable path resolution for grimoires
-# Version: 1.0.0
+# path-lib.sh - Configurable path resolution for grimoires and state
+# Version: 2.0.0
 #
 # Provides centralized path resolution with config support and validation.
 # Sourced by bootstrap.sh, which should be sourced by all Loa scripts.
@@ -18,19 +18,22 @@
 #   LOA_BEADS_DIR     - Override beads directory
 #   LOA_SOUL_SOURCE   - Override soul source path
 #   LOA_SOUL_OUTPUT   - Override soul output path
+#   LOA_STATE_DIR     - Override state directory
+#   LOA_ALLOW_ABSOLUTE_STATE - Set to "1" to permit absolute LOA_STATE_DIR paths
 # path-lib: exempt
 
 # =============================================================================
 # Constants
 # =============================================================================
 
-_PATH_LIB_VERSION="1.0.0"
+_PATH_LIB_VERSION="2.0.0"
 
 # Defaults (match current hardcoded behavior for backward compatibility)
 _DEFAULT_GRIMOIRE="grimoires/loa"
 _DEFAULT_BEADS=".beads"
 _DEFAULT_SOUL_SOURCE="grimoires/loa/BEAUVOIR.md"
 _DEFAULT_SOUL_OUTPUT="grimoires/loa/SOUL.md"
+_DEFAULT_STATE_DIR=".loa-state"
 
 # =============================================================================
 # Internal State
@@ -52,6 +55,17 @@ _init_path_lib() {
     return 0
   fi
 
+  # bug-980 (review iter-1): an empty PROJECT_ROOT root-anchors EVERY branch
+  # (config read, env inherit, defaults) at "/grimoires/loa" — guard once at
+  # the entry, not only in _use_defaults. Legacy mode resolves its own paths.
+  # Empty PROJECT_ROOT root-anchors at "/" in EVERY branch (config, env
+  # inherit, defaults, AND legacy) — no mode makes that valid, so no
+  # exemption (review iter-2).
+  if [[ -z "${PROJECT_ROOT:-}" ]]; then
+    echo "[path-lib] ERROR: PROJECT_ROOT is empty — refusing to anchor state paths at / (set PROJECT_ROOT or run bootstrap.sh)" >&2
+    return 1
+  fi
+
   # Check for legacy mode (rollback during migration)
   if [[ "${LOA_USE_LEGACY_PATHS:-}" == "1" ]]; then
     _use_legacy_paths
@@ -61,6 +75,14 @@ _init_path_lib() {
 
   # Inherit from environment if already set (parent script passed values)
   if [[ -n "${LOA_GRIMOIRE_DIR:-}" ]]; then
+    # Resolve state dir from env or use default
+    if [[ -n "${LOA_STATE_DIR:-}" ]]; then
+      if ! _resolve_state_dir_from_env; then
+        return 1
+      fi
+    else
+      export LOA_STATE_DIR="${PROJECT_ROOT}/${_DEFAULT_STATE_DIR}"
+    fi
     # Validate inherited paths
     if ! _validate_paths; then
       return 1
@@ -75,7 +97,9 @@ _init_path_lib() {
       return 1
     fi
   else
-    _use_defaults
+    if ! _use_defaults; then
+      return 1
+    fi
   fi
 
   # Validate all paths
@@ -88,10 +112,46 @@ _init_path_lib() {
 }
 
 _use_defaults() {
+  # bug-980: defense-in-depth (the primary guard is at _init_path_lib entry).
+  if [[ -z "${PROJECT_ROOT:-}" ]]; then
+    echo "[path-lib] ERROR: PROJECT_ROOT is empty — refusing to anchor state paths at /" >&2
+    return 1
+  fi
   export LOA_GRIMOIRE_DIR="${PROJECT_ROOT}/${_DEFAULT_GRIMOIRE}"
   export LOA_BEADS_DIR="${PROJECT_ROOT}/${_DEFAULT_BEADS}"
   export LOA_SOUL_SOURCE="${PROJECT_ROOT}/${_DEFAULT_SOUL_SOURCE}"
   export LOA_SOUL_OUTPUT="${PROJECT_ROOT}/${_DEFAULT_SOUL_OUTPUT}"
+  # State dir: env var takes precedence over default
+  if [[ -n "${LOA_STATE_DIR:-}" ]]; then
+    if ! _resolve_state_dir_from_env; then
+      return 1
+    fi
+  else
+    export LOA_STATE_DIR="${PROJECT_ROOT}/${_DEFAULT_STATE_DIR}"
+  fi
+}
+
+_resolve_state_dir_from_env() {
+  # Validate and resolve LOA_STATE_DIR from environment variable
+  if [[ "$LOA_STATE_DIR" == /* ]]; then
+    # Absolute path — requires opt-in
+    if [[ "${LOA_ALLOW_ABSOLUTE_STATE:-}" != "1" ]]; then
+      echo "ERROR: LOA_STATE_DIR is absolute but LOA_ALLOW_ABSOLUTE_STATE is not set: $LOA_STATE_DIR" >&2
+      return 1
+    fi
+    if [[ ! -d "$LOA_STATE_DIR" ]]; then
+      echo "ERROR: LOA_STATE_DIR does not exist: $LOA_STATE_DIR" >&2
+      return 1
+    fi
+    if [[ ! -w "$LOA_STATE_DIR" ]]; then
+      echo "ERROR: LOA_STATE_DIR is not writable: $LOA_STATE_DIR" >&2
+      return 1
+    fi
+  else
+    # Relative path — prepend PROJECT_ROOT
+    export LOA_STATE_DIR="${PROJECT_ROOT}/${LOA_STATE_DIR}"
+  fi
+  return 0
 }
 
 _use_legacy_paths() {
@@ -117,8 +177,16 @@ _read_config_paths() {
   fi
 
   # Verify yq version (v4+ required)
-  local yq_version yq_major
-  yq_version=$(yq --version 2>&1 | grep -oE '[0-9]+\.[0-9]+' | head -1) || true
+  # perf(pass-5): bash =~ replaces grep -oE | head -1 (2 execs + pipeline
+  # forks eliminated). Leftmost match over the full output equals the first
+  # matched line's first match; output is still captured on non-zero exit,
+  # matching the old `$(pipeline) || true` semantics.
+  local yq_version yq_major _yq_vraw
+  _yq_vraw=$(yq --version 2>&1) || true
+  yq_version=""
+  if [[ "$_yq_vraw" =~ [0-9]+\.[0-9]+ ]]; then
+    yq_version="${BASH_REMATCH[0]}"
+  fi
 
   if [[ -n "$yq_version" ]]; then
     yq_major="${yq_version%%.*}"
@@ -135,6 +203,32 @@ _read_config_paths() {
       echo "  See: https://github.com/mikefarah/yq" >&2
       return 1
     fi
+  fi
+
+  # perf(pass-5): single-probe fast path. When the config has no .paths key
+  # (probe yields "" with rc 0 — covers missing, null, and empty-string
+  # .paths; probed on yq 4.44.1, where `.paths.X // ""` also yields "" with
+  # rc 0 and no stderr for those shapes), every per-key read below provably
+  # returns "" and therefore its default — skip 5 yq spawns + mktemp/rm and
+  # export the same defaults directly. Any other probe outcome (map or
+  # scalar .paths, parse error) falls through to the original per-key reads
+  # unchanged, preserving their exact error handling.
+  local _paths_probe
+  if _paths_probe=$(yq '.paths // ""' "$CONFIG_FILE" 2>/dev/null) && [[ -z "$_paths_probe" ]]; then
+    export LOA_GRIMOIRE_DIR="${PROJECT_ROOT}/${_DEFAULT_GRIMOIRE}"
+    export LOA_BEADS_DIR="${PROJECT_ROOT}/${_DEFAULT_BEADS}"
+    export LOA_SOUL_SOURCE="${PROJECT_ROOT}/${_DEFAULT_SOUL_SOURCE}"
+    export LOA_SOUL_OUTPUT="${PROJECT_ROOT}/${_DEFAULT_SOUL_OUTPUT}"
+    # State dir: env var takes precedence over default (same branch shape as
+    # the per-key path below with an empty state_dir_raw).
+    if [[ -n "${LOA_STATE_DIR:-}" ]]; then
+      if ! _resolve_state_dir_from_env; then
+        return 1
+      fi
+    else
+      export LOA_STATE_DIR="${PROJECT_ROOT}/${_DEFAULT_STATE_DIR}"
+    fi
+    return 0
   fi
 
   # Read grimoire path with proper error handling
@@ -203,15 +297,64 @@ _read_config_paths() {
     export LOA_SOUL_OUTPUT="${PROJECT_ROOT}/${_DEFAULT_SOUL_OUTPUT}"
   fi
 
+  # Read state directory path
+  # Priority: LOA_STATE_DIR env var > config paths.state_dir > default
+  if [[ -n "${LOA_STATE_DIR:-}" ]]; then
+    # Env var already set — delegate validation to shared helper
+    if ! _resolve_state_dir_from_env; then
+      return 1
+    fi
+  else
+    local state_dir_raw
+    state_dir_raw=$(yq -e '.paths.state_dir // ""' "$CONFIG_FILE" 2>/dev/null) || true
+
+    if [[ -n "$state_dir_raw" && "$state_dir_raw" != "null" ]]; then
+      if [[ "$state_dir_raw" == /* ]]; then
+        echo "ERROR: paths.state_dir must be relative, got: $state_dir_raw" >&2
+        return 1
+      fi
+      export LOA_STATE_DIR="${PROJECT_ROOT}/${state_dir_raw}"
+    else
+      export LOA_STATE_DIR="${PROJECT_ROOT}/${_DEFAULT_STATE_DIR}"
+    fi
+  fi
+
   return 0
 }
 
 _validate_paths() {
   local errors=0
 
-  # Validate grimoire path doesn't escape workspace
-  local canonical_grimoire
-  canonical_grimoire=$(realpath -m "$LOA_GRIMOIRE_DIR" 2>/dev/null) || true
+  # perf(pass-5): one realpath -m resolves all four paths (3 execs saved).
+  # Line-splitting the batch output is only safe when every input is
+  # non-empty and newline-free — any other shape falls back to the original
+  # per-path calls (whose `|| true` capture semantics are preserved there).
+  local canonical_grimoire="" canonical_state="" canonical_source="" canonical_output=""
+  local _rp_batch_ok=false _rp_lines
+  # NOTE: guarded ${VAR:-} expansions here — the env-inherit init branch can
+  # leave LOA_SOUL_SOURCE/LOA_SOUL_OUTPUT unset, and under set -u an unguarded
+  # expansion in THIS shell would abort where the old code only lost a
+  # $(…)-subshell (caught by `|| true`). Unset/empty → batch skipped →
+  # fallback reproduces the old behavior exactly.
+  if [[ -n "${LOA_GRIMOIRE_DIR:-}" && -n "${LOA_STATE_DIR:-}" && -n "${LOA_SOUL_SOURCE:-}" && -n "${LOA_SOUL_OUTPUT:-}" && "${LOA_GRIMOIRE_DIR:-}" != *$'\n'* && "${LOA_STATE_DIR:-}" != *$'\n'* && "${LOA_SOUL_SOURCE:-}" != *$'\n'* && "${LOA_SOUL_OUTPUT:-}" != *$'\n'* ]]; then
+    if _rp_lines=$(realpath -m "${LOA_GRIMOIRE_DIR:-}" "${LOA_STATE_DIR:-}" "${LOA_SOUL_SOURCE:-}" "${LOA_SOUL_OUTPUT:-}" 2>/dev/null); then
+      # exactly-4-lines split (read chain; the negated 5th read asserts EOF)
+      local _rp1 _rp2 _rp3 _rp4 _rp_extra
+      if { IFS= read -r _rp1 && IFS= read -r _rp2 && IFS= read -r _rp3 && IFS= read -r _rp4 && ! IFS= read -r _rp_extra; } <<< "$_rp_lines"; then
+        canonical_grimoire="$_rp1"
+        canonical_state="$_rp2"
+        canonical_source="$_rp3"
+        canonical_output="$_rp4"
+        _rp_batch_ok=true
+      fi
+    fi
+  fi
+  # Fallback per-path calls run at their ORIGINAL positions below (not here)
+  # so any diagnostics they leak interleave with the validation errors in the
+  # same order as before.
+  if [[ "$_rp_batch_ok" != true ]]; then
+    canonical_grimoire=$(realpath -m "$LOA_GRIMOIRE_DIR" 2>/dev/null) || true
+  fi
 
   if [[ -n "$canonical_grimoire" && ! "$canonical_grimoire" == "$PROJECT_ROOT"* ]]; then
     echo "ERROR: Grimoire path escapes workspace: $LOA_GRIMOIRE_DIR" >&2
@@ -230,10 +373,26 @@ _validate_paths() {
     fi
   fi
 
+  # Validate state dir doesn't escape workspace (Sprint 1 audit MEDIUM fix)
+  # Only for relative paths resolved to absolute — skip for explicit absolute paths
+  # with LOA_ALLOW_ABSOLUTE_STATE opt-in (those are intentionally outside workspace)
+  if [[ "${LOA_ALLOW_ABSOLUTE_STATE:-}" != "1" ]]; then
+    if [[ "$_rp_batch_ok" != true ]]; then
+      canonical_state=$(realpath -m "$LOA_STATE_DIR" 2>/dev/null) || true
+    fi
+    if [[ -n "$canonical_state" && ! "$canonical_state" == "$PROJECT_ROOT"* ]]; then
+      echo "ERROR: State dir escapes workspace: $LOA_STATE_DIR" >&2
+      echo "  Resolved to: $canonical_state" >&2
+      echo "  Workspace:   $PROJECT_ROOT" >&2
+      ((errors++)) || true
+    fi
+  fi
+
   # Validate soul source != output (prevent circular reference)
-  local canonical_source canonical_output
-  canonical_source=$(realpath -m "$LOA_SOUL_SOURCE" 2>/dev/null) || true
-  canonical_output=$(realpath -m "$LOA_SOUL_OUTPUT" 2>/dev/null) || true
+  if [[ "$_rp_batch_ok" != true ]]; then
+    canonical_source=$(realpath -m "$LOA_SOUL_SOURCE" 2>/dev/null) || true
+    canonical_output=$(realpath -m "$LOA_SOUL_OUTPUT" 2>/dev/null) || true
+  fi
 
   if [[ -n "$canonical_source" && -n "$canonical_output" && "$canonical_source" == "$canonical_output" ]]; then
     echo "ERROR: Soul source and output cannot be the same file" >&2
@@ -250,7 +409,13 @@ _validate_paths() {
 # =============================================================================
 
 get_grimoire_dir() {
-  _init_path_lib || return 1
+  # bug-980: init failure must be LOUD — the silent empty echo turned every
+  # caller's derived path root-anchored (/prd.md) and golden-path reported
+  # phase "discovery" regardless of project state.
+  if ! _init_path_lib; then
+    echo "[path-lib] ERROR: init failed — cannot resolve grimoire dir (check yq + .loa.config.yaml)" >&2
+    return 1
+  fi
   echo "$LOA_GRIMOIRE_DIR"
 }
 
@@ -335,6 +500,119 @@ get_beauvoir_path() {
 get_soul_output_path() {
   _init_path_lib || return 1
   echo "$LOA_SOUL_OUTPUT"
+}
+
+# =============================================================================
+# Public API - State Directory Getters
+# =============================================================================
+
+get_state_dir() {
+  _init_path_lib || return 1
+  echo "${LOA_STATE_DIR}"
+}
+
+get_state_beads_dir() {
+  _init_path_lib || return 1
+  echo "${LOA_STATE_DIR}/beads"
+}
+
+get_state_ck_dir() {
+  _init_path_lib || return 1
+  echo "${LOA_STATE_DIR}/ck"
+}
+
+get_state_run_dir() {
+  _init_path_lib || return 1
+  echo "${LOA_STATE_DIR}/run"
+}
+
+get_state_memory_dir() {
+  _init_path_lib || return 1
+  echo "${LOA_STATE_DIR}/memory"
+}
+
+get_state_trajectory_dir() {
+  _init_path_lib || return 1
+  echo "${LOA_STATE_DIR}/trajectory"
+}
+
+# =============================================================================
+# Public API - State Layout Detection
+# =============================================================================
+
+detect_state_layout() {
+  local version_file="${PROJECT_ROOT}/.loa-version.json"
+  if [[ -f "$version_file" ]]; then
+    local ver
+    ver=$(jq -r '.state_layout_version // 0' "$version_file" 2>/dev/null) || true
+    if [[ "$ver" =~ ^[0-9]+$ ]]; then
+      echo "$ver"
+    else
+      echo "0"
+    fi
+  else
+    echo "0"
+  fi
+}
+
+init_version_file() {
+  local version_file="${PROJECT_ROOT}/.loa-version.json"
+  if [[ -f "$version_file" ]]; then
+    return 0  # Already exists
+  fi
+
+  local layout_version=2
+  # Detect legacy: if old scattered dirs exist, this is layout v1
+  if [[ -d "${PROJECT_ROOT}/.beads" || -d "${PROJECT_ROOT}/.run" || -d "${PROJECT_ROOT}/.ck" ]]; then
+    layout_version=1
+  fi
+
+  local tmp_file="${version_file}.tmp.$$"
+  local timestamp
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  cat > "$tmp_file" <<EOF
+{
+  "state_layout_version": ${layout_version},
+  "created": "${timestamp}",
+  "last_migration": null
+}
+EOF
+  mv "$tmp_file" "$version_file"
+}
+
+# =============================================================================
+# Public API - State Structure Management
+# =============================================================================
+
+ensure_state_structure() {
+  _init_path_lib || return 1
+  local sd
+  sd=$(get_state_dir) || return 1
+  mkdir -p "${sd}/beads" "${sd}/ck" "${sd}/run/bridge-reviews" "${sd}/run/mesh-cache"
+  mkdir -p "${sd}/memory/archive" "${sd}/memory/sessions"
+  mkdir -p "${sd}/trajectory/current" "${sd}/trajectory/archive"
+  # Initialize version file
+  init_version_file
+}
+
+# =============================================================================
+# Public API - Atomic JSONL Append
+# =============================================================================
+
+append_jsonl() {
+  local file="$1" entry="$2"
+  if [[ -z "$file" || -z "$entry" ]]; then
+    echo "ERROR: append_jsonl requires file and entry arguments" >&2
+    return 1
+  fi
+  local lockfile="${file}.lock"
+  (
+    if ! flock -w 5 200; then
+      echo "WARN: Could not acquire lock for $file after 5s" >&2
+      return 1
+    fi
+    printf '%s\n' "$entry" >> "$file"
+  ) 200>"$lockfile"
 }
 
 # =============================================================================

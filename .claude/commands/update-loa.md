@@ -155,6 +155,52 @@ State is tracked via `.claude/scripts/branch-state.sh`:
 .claude/scripts/branch-state.sh clear
 ```
 
+## Submodule Mode (issue #968)
+
+The workflow below documents the VENDORED flow (`git fetch loa main` →
+merge). **Submodule-mode mounts have no `loa`/`upstream` remote** — those
+steps will fail with "remote not configured". For submodule mounts, route to
+the dedicated script instead, which already implements detection, tag-pinned
+update, symlink reconcile, and (since #968) the #842 copy-set refresh:
+
+```bash
+.claude/scripts/update-loa.sh            # bumps the .loa submodule pointer to the
+                                         # latest v* tag, reconciles symlinks,
+                                         # refreshes .claude/hooks + settings.json,
+                                         # and commits the gitlink
+```
+
+Manual equivalent: bump the submodule pointer → `mount-submodule.sh
+--reconcile` (now refreshes the copy set too) → commit the gitlink. Never use
+`mount-submodule.sh --force` just to pick up an update — it deinits and
+re-adds the submodule destructively.
+
+### CI Drift Detection (optional)
+
+The #842 copy set (`.claude/hooks`, `.claude/settings.json`) is gitignored, so
+drift between a consumer's copy and its pinned `.loa` submodule produces no
+`git status`/CI-diff signal on its own (see KF-021,
+`grimoires/loa/known-failures.md`, and the decision doc at
+`grimoires/loa/proposals/copyset-ungitignore-decision-2026-07-07.md`).
+`mount-submodule.sh --check-symlinks` already detects this drift by content
+(not just missing/symlink checks) and exits non-zero on `COPY-DRIFT` /
+`COPY-STALE` / `COPY-MISSING` — it just isn't invoked automatically. To get a
+passive CI signal without any git-tracking change, add a step like this to
+an existing workflow (schedule or push-triggered):
+
+```yaml
+      - name: Check loa copy-set drift
+        run: .claude/scripts/mount-submodule.sh --check-symlinks
+        # Non-mutating (no --reconcile). Exits non-zero on COPY-DRIFT /
+        # COPY-STALE / COPY-MISSING so the job fails when the consumer's
+        # .claude/hooks or .claude/settings.json has drifted from the
+        # pinned .loa submodule content. Run `.claude/scripts/update-loa.sh`
+        # (or `mount-submodule.sh --reconcile`) locally to resync.
+```
+
+This is fully optional, additive, and reversible (delete the step to remove
+it) — it does not change any consumer's gitignore or copy-set behavior.
+
 ## Prerequisites
 
 - Working tree must be clean (no uncommitted changes)
@@ -194,16 +240,34 @@ git merge loa/main --no-commit
 > Phases 5.3 and 5.5 to inspect and fix collateral damage before the commit is created.
 > HEAD still points to the pre-merge branch tip during these phases.
 >
-> **Conflict handling**: If `git merge --no-commit` exits non-zero due to conflicts,
-> resolve conflicts first (see Phase 6), then proceed to Phase 5.3. The safeguard
-> operates on staged deletions (`--diff-filter=D`) which are present even during a
-> conflicted merge state — conflicted files show as "both modified", not as deletions.
+> **Conflict handling — resolve `.claude/hooks/**` and `.claude/settings.json` FIRST**:
+> If `git merge --no-commit` exits non-zero due to conflicts, resolve any conflict in
+> `.claude/hooks/**` and `.claude/settings.json` BEFORE touching any other conflicted
+> file and BEFORE running Phase 5.3 or issuing any further Bash call this session:
+>
+> ```bash
+> git checkout --theirs .claude/hooks/ .claude/settings.json && git add .claude/hooks/ .claude/settings.json
+> ```
+>
+> Why first: a hook file left with unresolved conflict markers no longer parses, and
+> Phase 5.3's own `git`/Bash calls re-trigger the same `PreToolUse:Bash` hook chain — a
+> corrupted `block-destructive-bash.sh` (or any wired hook) would then make EVERY
+> subsequent Bash call fail identically, bricking the session mid-merge (#1180). The
+> `.claude/hooks/hook-guard.sh` wrapper fails such a hook OPEN, but resolving hooks
+> first avoids relying on it. Then resolve remaining conflicts (see Phase 6) and
+> proceed to Phase 5.3. The safeguard operates on staged deletions (`--diff-filter=D`)
+> which are present even during a conflicted merge state — conflicted files show as
+> "both modified", not as deletions.
 
-### Phase 5.3: Collateral Deletion Safeguard (v1.3.0)
+### Phase 5.3: Collateral Safeguard (v1.3.0, extended v1.40.0)
 
-After the merge is staged but before committing, scan for files being deleted that are **outside** the Loa framework zone. These deletions are collateral damage from upstream cleanup and must not propagate to downstream projects.
+After the merge is staged but before committing, scan for two categories of collateral damage:
+
+1. **Deletions** (`--diff-filter=D`): Files deleted by upstream cleanup that should not propagate
+2. **Content replacements** (`--diff-filter=M`): Project identity files whose content was overwritten by upstream's version during merge conflict resolution
 
 ```bash
+# --- Part 1: Collateral deletion protection (v1.3.0) ---
 # Identify files staged for deletion by the merge
 deleted_files=$(git diff --cached --diff-filter=D --name-only)
 restored_count=0
@@ -221,7 +285,7 @@ if [[ -n "$deleted_files" ]]; then
       .loa.config.yaml.example) ;;
       # Everything else — non-framework file, restore from pre-merge state
       *)
-        git checkout HEAD -- "$file" 2>/dev/null && ((restored_count++)) || true
+        git checkout HEAD -- "$file" 2>/dev/null && restored_count=$((restored_count + 1)) || true
         ;;
     esac
   done <<< "$deleted_files"
@@ -230,16 +294,45 @@ if [[ -n "$deleted_files" ]]; then
     echo "Safeguard: restored $restored_count non-framework files that would have been deleted by upstream merge"
   fi
 fi
+
+# --- Part 2: Identity file content-replacement protection (v1.40.0) ---
+# Project identity files describe YOUR project, not the framework.
+# Merge conflict resolution (especially --theirs) can silently replace
+# downstream content with upstream's version. This is invisible to
+# --diff-filter=D because the file is modified, not deleted.
+#
+# Fixes: #439 — BUTTERFREEZONE.md overwritten during /update-loa
+identity_files="README.md CHANGELOG.md BUTTERFREEZONE.md"
+identity_restored=0
+
+for identity_file in $identity_files; do
+  # Only check if the file existed before the merge AND was modified by it
+  if git show "HEAD:$identity_file" >/dev/null 2>&1 && \
+     git diff --cached --diff-filter=M --name-only | grep -qxF "$identity_file"; then
+    git checkout HEAD -- "$identity_file" 2>/dev/null && identity_restored=$((identity_restored + 1)) || true
+  fi
+done
+
+if [[ $identity_restored -gt 0 ]]; then
+  echo "Safeguard: restored $identity_restored project identity files that would have been overwritten by upstream merge"
+fi
 ```
 
-> **Why?** When upstream performs cleanup (removing template/example files), `git merge`
+> **Why deletions?** When upstream performs cleanup (removing template/example files), `git merge`
 > propagates those deletions to downstream projects that share git history. This safeguard
 > uses an allowlist of framework-managed paths — only deletions within the framework zone
 > are permitted. All other files are restored from HEAD (pre-merge state), preserving
 > downstream application code, configurations, and documentation.
 >
+> **Why content replacements?** Project identity files (README.md, CHANGELOG.md, BUTTERFREEZONE.md)
+> are generated per-project and describe YOUR project. When merge conflicts on these files are
+> resolved with `--theirs`, the downstream project's identity is silently replaced with upstream's.
+> The `--diff-filter=D` check cannot catch this because the file is modified, not deleted.
+> `.gitattributes merge=ours` is the primary defense; this check is defense-in-depth.
+>
 > **Fixes**: [#331](https://github.com/0xHoneyJar/loa/issues/331) — cycle-014 merge
 > deleting 933 downstream project files.
+> [#439](https://github.com/0xHoneyJar/loa/issues/439) — BUTTERFREEZONE.md content overwrite.
 
 ### Phase 5.5: Revert Protected Paths
 
@@ -263,6 +356,70 @@ fi
 ```
 
 > **Why?** GitHub requires the `workflow` OAuth scope to push changes to `.github/workflows/`. Most downstream users don't have this scope. The `.gitattributes` `merge=ours` rule protects existing workflow files, but new workflow files added upstream still propagate via merge. This step catches both cases. (Defense-in-depth: Phase 5.3 already handles workflow file deletions, but this phase additionally catches new and modified workflow files.)
+
+### Phase 5.6: Bump Version Markers (v1.95+, Issue #554)
+
+Framework-managed version markers (`.loa-version.json` + `CLAUDE.loa.md:1` header) are project-owned under the default merge resolver, so the merge keeps the local (stale) version. This phase idempotently rewrites both with the target release tag so downstream `/loa`, `loa-status.sh`, and issue triage report the correct version.
+
+```bash
+# Security: inline the bump using only trusted local utilities (jq, sed,
+# awk, git) — never execute shell scripts from the just-merged tree.
+# This closes the supply-chain injection path that `bash
+# .claude/scripts/update-loa-bump-version.sh` would open. The sourceable
+# script remains for unit testing and standalone/manual bumps; this
+# inline version is the /update-loa invocation path.
+_loa_bump_target=""
+# Resolution chain: tag on FETCH_HEAD → upstream .loa-version.json → short SHA
+if git rev-parse --verify FETCH_HEAD >/dev/null 2>&1; then
+  _loa_bump_target=$(git tag --points-at FETCH_HEAD 2>/dev/null | grep -E '^v[0-9]+\.' | head -1 | sed 's/^v//' || true)
+  if [[ -z "$_loa_bump_target" ]] && git show "FETCH_HEAD:.loa-version.json" >/dev/null 2>&1; then
+    _loa_bump_target=$(git show "FETCH_HEAD:.loa-version.json" 2>/dev/null | jq -r '.framework_version // empty' 2>/dev/null || true)
+  fi
+  if [[ -z "$_loa_bump_target" ]]; then
+    _loa_bump_target=$(git rev-parse --short FETCH_HEAD 2>/dev/null || true)
+  fi
+fi
+
+# Strict format validation (semver or 7-40 hex SHA) — reject injection shapes
+_loa_bump_valid=false
+if [[ "$_loa_bump_target" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][A-Za-z0-9._-]+)?(\+[A-Za-z0-9.-]+)?$ ]]; then
+  _loa_bump_valid=true
+elif [[ "$_loa_bump_target" =~ ^[0-9a-f]{7,40}$ ]]; then
+  _loa_bump_valid=true
+fi
+
+if [[ "$_loa_bump_valid" == "true" ]]; then
+  # Bump .loa-version.json (idempotent, atomic)
+  if [[ -f .loa-version.json ]] && command -v jq >/dev/null 2>&1; then
+    _loa_current=$(jq -r '.framework_version // empty' .loa-version.json 2>/dev/null || true)
+    if [[ "$_loa_current" != "$_loa_bump_target" ]]; then
+      _loa_now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+      jq --arg v "$_loa_bump_target" --arg t "$_loa_now" \
+        '.framework_version = $v | .last_sync = $t' \
+        .loa-version.json > .loa-version.json.tmp.$$ && \
+        mv .loa-version.json.tmp.$$ .loa-version.json
+    fi
+  fi
+  # Bump CLAUDE.loa.md:1 header (preserve hash + PLACEHOLDER)
+  if [[ -f .claude/loa/CLAUDE.loa.md ]]; then
+    _loa_header=$(head -n 1 .claude/loa/CLAUDE.loa.md)
+    if [[ "$_loa_header" == *"@loa-managed: true"* ]]; then
+      awk -v target="$_loa_bump_target" 'NR==1 {
+        sub(/version:[[:space:]]*[^[:space:]|]+/, "version: " target)
+      } { print }' .claude/loa/CLAUDE.loa.md > .claude/loa/CLAUDE.loa.md.tmp.$$ && \
+        mv .claude/loa/CLAUDE.loa.md.tmp.$$ .claude/loa/CLAUDE.loa.md
+    fi
+  fi
+  git add .loa-version.json .claude/loa/CLAUDE.loa.md 2>/dev/null || true
+else
+  echo "Note: version marker bump skipped — could not resolve valid target version" >&2
+fi
+unset _loa_bump_target _loa_bump_valid _loa_current _loa_now _loa_header
+```
+
+> **Why?** `/update-loa` Phases 5.3/5.5 protect project state and workflows. The version markers look like config but describe framework identity. Without this phase, downstream reports a stale `framework_version` across multiple updates, and the `update_available` nag fires for updates already installed. The script fails open (non-blocking) — a bump failure should not halt the merge.
+>
+> **Fixes**: [#554](https://github.com/0xHoneyJar/loa/issues/554) — `.loa-version.json` + `CLAUDE.loa.md` markers not refreshed by `/update-loa` merge resolution.
 
 ### Phase 5.7: Commit the Safeguarded Merge
 
@@ -329,6 +486,22 @@ Recommend accepting upstream version:
 ```bash
 git checkout --theirs {filename}
 ```
+
+> **If Bash itself stops working (fully-bricked session, #1180)**: symptom — every
+> Bash call fails identically regardless of the command, because an unresolved
+> conflict left a wired hook (e.g. `.claude/hooks/safety/block-destructive-bash.sh`)
+> unparseable. You cannot fix this from inside Claude Code — its Bash tool is the
+> thing that is bricked. Open a real terminal OUTSIDE Claude Code and run, from the
+> repo root:
+>
+> ```bash
+> git checkout --theirs .claude/hooks/safety/block-destructive-bash.sh
+> ```
+>
+> (substitute the actual conflicted hook path). Do NOT prefix this with
+> `LOA_ACTOR=update-loa` — that variable is inert here: `zone-write-guard.sh` gates
+> Write/Edit only, never Bash, and this recovery bypasses Claude Code's tool layer by
+> running in a plain shell. Retrying inside the bricked session will not help.
 
 ### Project Identity Files (`CHANGELOG.md`, `README.md`)
 

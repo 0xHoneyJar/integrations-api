@@ -1,0 +1,22 @@
+{
+  "provider": "discord",
+  "sourceClass": "event-catalog",
+  "url": "https://docs.discord.com/developers/events/gateway-events",
+  "ref": "gateway-events HTML snapshot retrieved 2026-07-15T20:21:10Z",
+  "digest": "sha256:198a55df0e90300c96297050782311d312448e7dcf8a1d8900ba1d87ad5feede",
+  "retrievedAt": "2026-07-15T20:21:10Z",
+  "generator": "design-level-no-generator",
+  "generatorVersion": "wave-1",
+  "discovered": [
+    "GUILD_MEMBER_ADD (guild_id, user{id}, roles[], joined_at, nick)",
+    "GUILD_MEMBER_UPDATE (guild_id, user{id}, roles[], ...)",
+    "GUILD_MEMBER_REMOVE (guild_id, user{id})",
+    "MESSAGE_CREATE (content) — excluded from the Tier-1 member graph",
+    "Session lifecycle (Tier-2, not wave-1): HELLO(10), READY(0), RESUMED(0), INVALID_SESSION(9), RECONNECT(7), Heartbeat(1); sequence s drives resume replay"
+  ],
+  "patches": [],
+  "validation": {
+    "semanticFocus": "Pinned the retrieved official Gateway Events page by content digest; member-event semantics are bounded to the wave-1 classification table.",
+    "sourceDomain": "docs.discord.com/developers (official Discord)"
+  }
+}

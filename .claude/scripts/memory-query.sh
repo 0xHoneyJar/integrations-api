@@ -24,9 +24,24 @@ if [[ -f "$SCRIPT_DIR/bootstrap.sh" ]]; then
     source "$SCRIPT_DIR/bootstrap.sh"
 fi
 
+# Source DX utilities if available
+if [[ -f "$SCRIPT_DIR/lib/dx-utils.sh" ]]; then
+    source "$SCRIPT_DIR/lib/dx-utils.sh"
+fi
+
 # Configuration
 PROJECT_ROOT="${PROJECT_ROOT:-$(pwd)}"
-MEMORY_DIR="$PROJECT_ROOT/grimoires/loa/memory"
+
+# Resolve memory directory via path-lib (with fallback to legacy path)
+if type get_state_memory_dir &>/dev/null; then
+    MEMORY_DIR=$(get_state_memory_dir 2>/dev/null) || MEMORY_DIR="$PROJECT_ROOT/grimoires/loa/memory"
+elif [[ -f "$SCRIPT_DIR/path-lib.sh" ]]; then
+    source "$SCRIPT_DIR/path-lib.sh" 2>/dev/null && {
+        MEMORY_DIR=$(get_state_memory_dir 2>/dev/null) || MEMORY_DIR="$PROJECT_ROOT/grimoires/loa/memory"
+    }
+else
+    MEMORY_DIR="$PROJECT_ROOT/grimoires/loa/memory"
+fi
 OBSERVATIONS_FILE="$MEMORY_DIR/observations.jsonl"
 
 # =============================================================================
@@ -71,6 +86,20 @@ EOF
 # =============================================================================
 # Validation
 # =============================================================================
+
+# Guard against a value-taking flag being the last argument. Without this,
+# the arg parser's "shift 2" crashes under set -u/-e with EMPTY stdout+stderr
+# (exit 1, no diagnostic) — this prints an educational error and exits 2
+# instead. Args: $1 = flag name (e.g. "--full"), $2 = remaining arg count ($#).
+require_flag_value() {
+    local flag="$1"
+    local remaining="$2"
+    if [[ "$remaining" -lt 2 ]]; then
+        echo "Error: $flag requires a value" >&2
+        echo "Usage: memory-query.sh [OPTIONS] [QUERY]" >&2
+        exit 2
+    fi
+}
 
 check_observations_file() {
     if [[ ! -f "$OBSERVATIONS_FILE" ]]; then
@@ -209,6 +238,70 @@ search_observations() {
         jq -s '.[] | {id, type, timestamp: .timestamp[0:10], summary: (.summary[0:100] + "...")}' 2>/dev/null || echo "[]"
 }
 
+# =============================================================================
+# Lore Query Functions (FR-5 — Temporal Lore Depth)
+# =============================================================================
+
+LORE_DIR="${LORE_DIR:-$PROJECT_ROOT/.claude/data/lore}"
+DISCOVERED_DIR="${DISCOVERED_DIR:-$LORE_DIR/discovered}"
+
+# List all lore entries with lifecycle metadata
+show_lore() {
+    local sort_by="${1:-id}"
+    local filter_significance="${2:-}"
+    local filter_repo="${3:-}"
+    local limit="${4:-20}"
+
+    local lore_files=("$DISCOVERED_DIR/patterns.yaml" "$DISCOVERED_DIR/visions.yaml")
+    local all_entries="[]"
+
+    for lf in "${lore_files[@]}"; do
+        [[ -f "$lf" ]] || continue
+        local entries
+        entries=$(yq -o=json '.entries // []' "$lf" 2>/dev/null) || continue
+        all_entries=$(echo "$all_entries" | jq --argjson new "$entries" '. + $new')
+    done
+
+    # Apply filters
+    if [[ -n "$filter_significance" ]]; then
+        all_entries=$(echo "$all_entries" | jq --arg sig "$filter_significance" \
+            '[.[] | select((.lifecycle.significance // "one-off") == $sig)]')
+    fi
+
+    if [[ -n "$filter_repo" ]]; then
+        all_entries=$(echo "$all_entries" | jq --arg repo "$filter_repo" \
+            '[.[] | select((.lifecycle.repos // []) | any(. == $repo))]')
+    fi
+
+    # Sort
+    case "$sort_by" in
+        references)
+            all_entries=$(echo "$all_entries" | jq 'sort_by(-(.lifecycle.references // 0))')
+            ;;
+        last_seen)
+            all_entries=$(echo "$all_entries" | jq 'sort_by(.lifecycle.last_seen // "0000") | reverse')
+            ;;
+        *)
+            all_entries=$(echo "$all_entries" | jq 'sort_by(.id)')
+            ;;
+    esac
+
+    # Apply limit
+    all_entries=$(echo "$all_entries" | jq --argjson lim "$limit" '.[:$lim]')
+
+    # Format output
+    echo "$all_entries" | jq '.[] | {
+        id,
+        term,
+        short,
+        references: (.lifecycle.references // 0),
+        last_seen: (.lifecycle.last_seen // "never"),
+        significance: (.lifecycle.significance // "one-off"),
+        repos: (.lifecycle.repos // []),
+        tags
+    }'
+}
+
 # Statistics
 show_stats() {
     if [[ ! -f "$OBSERVATIONS_FILE" ]] || [[ ! -s "$OBSERVATIONS_FILE" ]]; then
@@ -268,6 +361,9 @@ main() {
     local filter_session=""
     local obs_id=""
     local search_query=""
+    local lore_sort_by="id"
+    local lore_significance=""
+    local lore_repo=""
 
     # Parse arguments
     while [[ $# -gt 0 ]]; do
@@ -281,27 +377,33 @@ main() {
                 shift
                 ;;
             --full)
+                require_flag_value "--full" "$#"
                 mode="full"
                 obs_id="${2:-}"
                 shift 2
                 ;;
             --type)
+                require_flag_value "--type" "$#"
                 filter_type="${2:-}"
                 shift 2
                 ;;
             --tags)
+                require_flag_value "--tags" "$#"
                 filter_tags="${2:-}"
                 shift 2
                 ;;
             --since)
+                require_flag_value "--since" "$#"
                 filter_date="${2:-}"
                 shift 2
                 ;;
             --session)
+                require_flag_value "--session" "$#"
                 filter_session="${2:-}"
                 shift 2
                 ;;
             --limit)
+                require_flag_value "--limit" "$#"
                 limit="${2:-10}"
                 shift 2
                 ;;
@@ -317,12 +419,36 @@ main() {
                 mode="stats"
                 shift
                 ;;
+            --lore)
+                mode="lore"
+                shift
+                ;;
+            --sort-by)
+                lore_sort_by="${2:-id}"
+                shift 2
+                ;;
+            --significance)
+                lore_significance="${2:-}"
+                shift 2
+                ;;
+            --repo)
+                lore_repo="${2:-}"
+                shift 2
+                ;;
             -h|--help)
                 usage
                 exit 0
                 ;;
             -*)
-                echo "Unknown option: $1" >&2
+                # fresh-eyes r1 (bd-m1o6): dx-utils is sourced conditionally
+                # above, so the call must be guarded for partial installs.
+                if declare -F dx_unknown_flag >/dev/null 2>&1; then
+                    dx_unknown_flag "$1" "Usage: memory-query.sh [OPTIONS] [QUERY]" \
+                        --index --type --tags --since --limit --full --summary --session \
+                        --json --table --stats --lore --sort-by --significance --repo --help
+                else
+                    echo "Unknown option: $1" >&2
+                fi
                 usage
                 exit 1
                 ;;
@@ -333,6 +459,17 @@ main() {
                 ;;
         esac
     done
+
+    # Lore mode doesn't need observations file
+    if [[ "$mode" == "lore" ]]; then
+        local result
+        result=$(show_lore "$lore_sort_by" "$lore_significance" "$lore_repo" "$limit")
+        case "$output_format" in
+            table) output_as_table "$result" ;;
+            json|*) echo "$result" ;;
+        esac
+        return
+    fi
 
     # Check observations file exists
     check_observations_file

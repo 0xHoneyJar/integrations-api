@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * acvp:verify — Tier-A proof attestation for mediums-api (sprint-400 T5a).
+ * acvp:verify — Tier-A proof attestation for the integrations-api building.
  *
  * Runs each declared NON-aspirational ACVP proof from packages/protocol/beacon.yaml
  * via `bun test`. On all-pass, writes app/.well-known/acvp-proof-receipt.json — an

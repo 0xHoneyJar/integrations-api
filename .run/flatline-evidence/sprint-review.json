@@ -1,0 +1,345 @@
+{
+  "consensus_summary": {
+    "high_consensus_count": 0,
+    "disputed_count": 14,
+    "low_value_count": 0,
+    "blocker_count": 14,
+    "model_agreement_percent": 0,
+    "models": 3,
+    "tertiary_items": 0,
+    "confidence": "single_model"
+  },
+  "high_consensus": [],
+  "disputed": [
+    {
+      "id": "IMP-001",
+      "description": "The declared dependency range and required implementation idioms should agree. Raising or explicitly testing the minimum supported Effect version is inexpensive and prevents installation-time API and type mismatches.",
+      "gpt_score": 0,
+      "opus_score": 910,
+      "tertiary_score": 930,
+      "delta": 910,
+      "average_score": 910,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-002",
+      "description": "This closes a blocking contract gap in fail-closed coverage enforcement. Defining the artifact path, schema, producer, and consumer is essential and has high benefit relative to its modest specification cost.",
+      "gpt_score": 0,
+      "opus_score": 970,
+      "tertiary_score": 945,
+      "delta": 970,
+      "average_score": 970,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-003",
+      "description": "The public API boundary is materially ambiguous across tasks. Explicit exports and end-to-end tests against the supported entrypoints prevent accidental publication of an internal API and stabilize downstream integration.",
+      "gpt_score": 0,
+      "opus_score": 925,
+      "tertiary_score": 920,
+      "delta": 925,
+      "average_score": 925,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-004",
+      "description": "A release gate cannot be satisfied reliably when its lint mechanism is never introduced. Adding the script, scope, and definition-of-green wiring is straightforward and makes the final acceptance criterion executable.",
+      "gpt_score": 0,
+      "opus_score": 890,
+      "tertiary_score": 875,
+      "delta": 890,
+      "average_score": 890,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-005",
+      "description": "Calling process-local in-memory state durable risks overstating the system's guarantees. Precise process-lifetime semantics and inspection tests are low-cost safeguards against a serious acceptance mismatch.",
+      "gpt_score": 0,
+      "opus_score": 860,
+      "tertiary_score": 910,
+      "delta": 860,
+      "average_score": 860,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-006",
+      "description": "The two malformed-input layers represent distinct operational failures and should produce stable reason codes. A small taxonomy clarification plus paired tests provides strong diagnostic and governance value.",
+      "gpt_score": 0,
+      "opus_score": 835,
+      "tertiary_score": 735,
+      "delta": 835,
+      "average_score": 835,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-007",
+      "description": "Absent hash behavior is a meaningful ingestion policy decision affecting verification and stored identity evidence. Specifying and testing it removes a common edge-case ambiguity at low cost.",
+      "gpt_score": 0,
+      "opus_score": 820,
+      "tertiary_score": 905,
+      "delta": 820,
+      "average_score": 820,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-008",
+      "description": "The sprint goal and deliverables should align. A pinned compatibility test would provide useful proof of identity stability, though narrowing the goal is also reasonable if no migration is actually intended.",
+      "gpt_score": 0,
+      "opus_score": 760,
+      "tertiary_score": 755,
+      "delta": 760,
+      "average_score": 760,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-009",
+      "description": "Inlining the seven dimensions improves reviewability and reduces dependence on cross-document lookup. It is cheap, but duplicating the canonical list creates a modest drift risk unless generated or explicitly mirrored.",
+      "gpt_score": 0,
+      "opus_score": 665,
+      "tertiary_score": 640,
+      "delta": 665,
+      "average_score": 665,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-010",
+      "description": "Clarifying the temporary registry composition prevents implementers from prematurely coupling Sprint 2 to the Discord adapter and makes unknown-provider tests deterministic. The change is small and resolves real sequencing ambiguity.",
+      "gpt_score": 0,
+      "opus_score": 805,
+      "tertiary_score": 885,
+      "delta": 805,
+      "average_score": 805,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-011",
+      "description": "If telemetry ordering is a stated correctness invariant, it deserves a focused test. The value is meaningful for trace integrity, although span-sequence tests can become implementation-coupled and should assert semantic milestones rather than internals.",
+      "gpt_score": 0,
+      "opus_score": 720,
+      "tertiary_score": 720,
+      "delta": 720,
+      "average_score": 720,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-012",
+      "description": "A dedicated poison-pill test captures a subtle sticky-first-write invariant that generic duplicate and conflict cases may miss. It is inexpensive and protects behavior that could otherwise regress silently.",
+      "gpt_score": 0,
+      "opus_score": 735,
+      "tertiary_score": 690,
+      "delta": 735,
+      "average_score": 735,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-013",
+      "description": "Pinned concurrency parameters and an exact outcome distribution improve repeatability and review clarity. N≥16 alone does not prove broad race safety, but the proposed assertion is a useful deterministic baseline.",
+      "gpt_score": 0,
+      "opus_score": 700,
+      "tertiary_score": 555,
+      "delta": 700,
+      "average_score": 700,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-014",
+      "description": "Preventing silent test deletion is worthwhile, but a hard test-count floor is brittle, can reward low-value test quantity, and complicates legitimate consolidation. Prefer coverage, required-suite, or mutation/regression guards over anchoring to the historical count of 324.",
+      "gpt_score": 0,
+      "opus_score": 430,
+      "tertiary_score": 430,
+      "delta": 430,
+      "average_score": 430,
+      "source": "opus_scored",
+      "would_integrate": false,
+      "agreement": "DISPUTED"
+    }
+  ],
+  "low_value": [],
+  "blockers": [
+    {
+      "id": "SKP-004",
+      "concern": "Discord adapter scope covers decode/classify only; there is no task for webhook signature verification, timestamp tolerance, or replay protection on the ingress path.",
+      "severity": "HIGH",
+      "severity_score": 740,
+      "why_matters": "Even with live network out of scope, the reference vertical can ship a classification harness that is unsafe to wire to real Discord traffic without a follow-on security layer, creating a false sense of production readiness.",
+      "location": "Sprint 3 — S3-T1/S3-T2; Out of scope section",
+      "recommendation": "Add an explicit non-goal plus a continuation-plan security checklist (Ed25519 verification, clock skew, replay window) and a negative test fixture for unsigned/tampered payloads at the orchestration boundary.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-002",
+      "concern": "Durable quarantine is required for malformed envelopes and missing event IDs, but the store is keyed by an idempotency key that is null when the upstream ID is absent. No separate quarantine identity or storage contract is defined.",
+      "severity": "CRITICAL",
+      "severity_score": 885,
+      "why_matters": "Malformed or ID-less inputs cannot be durably recorded, deduplicated, or inspected under the stated store model, contradicting the requirement that malformed input cannot disappear.",
+      "location": "S2-T1, S2-T5, S3-T2, AC-4, and §16.2",
+      "recommendation": "Specify a separate quarantine-record identity and atomic persistence API that does not masquerade as an event idempotency key. Define collision handling, retry behavior, retention, and whether a safe payload digest may be used solely for quarantine records.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-004",
+      "concern": "Effect peerDep is `^3.10.0` while schemas/idioms target Effect 3.21.2 — semver range allows install of APIs older than the SDD mapping and newer majors within ^ that may break Schema.TaggedError / Ref.modify assumptions.",
+      "severity": "HIGH",
+      "severity_score": 720,
+      "why_matters": "CI may green on one Effect version while consumers resolve another, causing silent behavior drift in identity, store atomicity, or error tagging.",
+      "location": "Sprint 1 S1-T1 package.json peerDep; Risk register (Effect API drift)",
+      "recommendation": "Pin peerDep and devDep to the exact Effect range proven by typecheck (e.g. >=3.21.2 <4), add an engines/peer check test, and document the locked version in the package README.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-002",
+      "concern": "Idempotency and conflict stickiness are proven only on `InMemoryIngestionStoreLayer`; there is no sprint task for durable storage semantics, restart behavior, or multi-instance deduplication.",
+      "severity": "CRITICAL",
+      "severity_score": 820,
+      "why_matters": "After process restart or horizontal scale, duplicate upstream events may be re-committed, breaking INV-2 and creating inconsistent membership state when this moves beyond the reference vertical.",
+      "location": "Sprint 2 — S2-T1, S2-T4; Risk register (missing)",
+      "recommendation": "Document wave-1 non-durability as an explicit assumption in README/continuation plan, add a named ADR for the future store contract (atomic compare-and-set), and add a failing-or-skipped contract test stub that encodes required durable semantics.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-002",
+      "concern": "Ingestion trust boundary is unstated: plan assumes pre-decoded envelopes and defers transport, webhook signatures, and auth. Discord vertical can be integrated without proving authenticity of membership events.",
+      "severity": "CRITICAL",
+      "severity_score": 840,
+      "why_matters": "Without signature/HMAC verification or a documented trusted-ingress adapter, forged MembershipObserved/Revoked events can corrupt identity state if anything outside this package feeds ingestEnvelope.",
+      "location": "Sprint 2 ingest boundary; Sprint 3 Discord adapter; Out of scope (pre-envelope transport); S4 knownLimitations",
+      "recommendation": "Document the trust model as a MUST invariant (who may call ingest*), add a blocking continuation item for signed Discord webhook/gateway verification, and fail closed in docs/API if raw Discord payloads are accepted without a verified-transport layer.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-001",
+      "concern": "Poison-pill sticky conflict is permanent with no recovery path: first disposition wins forever on same key + different digest, including intentional poison-pill cases. Wave 1 only documents this as knownLimitation; no operator override, rekey, or admin resolve path is specified.",
+      "severity": "CRITICAL",
+      "severity_score": 860,
+      "why_matters": "A single bad first write (bug, wrong adapter version, corrupted digest) permanently blocks legitimate redelivery of the correct event for that tenant/connection/upstream id, creating irreversible data loss until a redesign.",
+      "location": "Sprint 2 S2-T1 (sticky conflict §16.4); Sprint 4 knownLimitations; Risk register",
+      "recommendation": "Either (a) add an explicit conflict-resolution contract (admin rekey / supersede / tombstone with audit) before calling the spine production-ready, or (b) gate wave-1 merge on a hard DoD that sticky-conflict is non-production and require a recovery PR before any durable store.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-003",
+      "concern": "Sticky first disposition on key conflict (including poison-pill quarantines) has no remediation, replay, or operator-override path in any sprint.",
+      "severity": "HIGH",
+      "severity_score": 760,
+      "why_matters": "A single malformed or misclassified event can permanently block legitimate later events for the same idempotency key, causing silent data loss that tests in S2/S3 may treat as intentional without operational escape hatches.",
+      "location": "Sprint 2 — S2-T1 (sticky conflict §16.4); Sprint 4 — knownLimitations",
+      "recommendation": "Add a documented remediation policy (manual key eviction, admin replay, or versioned keys), at least one test for the stuck-state scenario, and a continuation-plan decision on whether conflicts are ever superseded.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-005",
+      "concern": "The digest contract does not precisely define which bytes or value are hashed, how rawPayloadHash is excluded from its own computation, or how JSON edge cases are handled.",
+      "severity": "HIGH",
+      "severity_score": 710,
+      "why_matters": "Different producers can compute different hashes for equivalent inputs, creating false hash-mismatch quarantines or conflict records. Ambiguity around numbers, arrays, undefined values, cycles, and Unicode can also undermine deterministic identity.",
+      "location": "S1-T3, S1-T5, and S2-T5",
+      "recommendation": "Adopt a named canonical JSON specification or fully specify canonicalization, hash input boundaries, UTF-8 encoding, exclusion fields, numeric rules, arrays, Unicode, cycles, and unsupported values; add cross-implementation vectors.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-001",
+      "concern": "The identity contract appears incompatible with Discord Gateway events: GUILD_MEMBER_ADD, UPDATE, and REMOVE generally do not carry a durable upstream event ID, while absent IDs must be quarantined with no content-derived fallback.",
+      "severity": "CRITICAL",
+      "severity_score": 940,
+      "why_matters": "The reference adapter may quarantine every real membership event, so deterministic fixtures could pass while the production vertical cannot commit observations.",
+      "location": "S1-T3, S2-T5, S3-T1, and §16.1–§16.2 identity requirements",
+      "recommendation": "Define and validate a Discord-specific durable identity source before implementation, including reconnect and replay behavior. If Gateway session/sequence identity is used, specify its persistence and stability boundaries; otherwise revise the protocol or explicitly classify this vertical as non-ingestable.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-003",
+      "concern": "The package declares Effect as peer dependency ^3.10.0 while implementation and schemas explicitly target Effect 3.21.2.",
+      "severity": "HIGH",
+      "severity_score": 770,
+      "why_matters": "Consumers may install versions below 3.21.2 that satisfy the peer range but lack required APIs or behavior, causing type or runtime failures outside this workspace.",
+      "location": "S1-T1 and S1-T2",
+      "recommendation": "Set the peer range to the minimum version actually validated, add a matching development dependency, and test both the minimum supported and current Effect versions if a broad range is intentional.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-001",
+      "concern": "The plan names two different ingestion entry points (`ingestUnknown` in S2-T5 as the single public boundary vs `ingestEnvelope` in S2-T3/S3-T2) without specifying their relationship, which risks shipping duplicate APIs or the wrong public surface.",
+      "severity": "CRITICAL",
+      "severity_score": 880,
+      "why_matters": "Autonomous implementers may expose the wrong function, split validation paths, or break the §16.6 single-boundary invariant; downstream adapters and tests will diverge silently.",
+      "location": "Sprint 2 — S2-T3, S2-T5; SDD §16.6",
+      "recommendation": "Add an explicit API contract: one exported ingestion function, alias mapping if needed, and a single test suite that asserts all disposition paths route through it.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-004",
+      "concern": "The trust boundary for tenantId, provider, connectionId, upstreamEventId, and rawPayloadHash is unstated; all appear to arrive in the decoded envelope and directly control isolation and idempotency.",
+      "severity": "HIGH",
+      "severity_score": 755,
+      "why_matters": "If untrusted callers can choose these fields, they can spoof tenants, force duplicate/conflict outcomes, pollute another tenant's records, or select the wrong adapter.",
+      "location": "Protocol envelope, S1-T3, S2-T5, and ingestUnknown public boundary",
+      "recommendation": "Document which layer authenticates and binds tenant and connection identity, distinguish trusted transport metadata from provider payload, and add tests proving envelope-supplied values cannot override authenticated context.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-005",
+      "concern": "`malformed-envelope` quarantine uses a safe-derived digest, but the plan does not define the derivation algorithm, collision resistance, or stability across library versions.",
+      "severity": "HIGH",
+      "severity_score": 710,
+      "why_matters": "Weak or unstable digest derivation can collapse distinct malformed events into one idempotency key (false duplicates) or change across releases (duplicate re-ingestion), undermining quarantine durability (AC-4/AC-5).",
+      "location": "Sprint 2 — S2-T5; §16.7",
+      "recommendation": "Specify canonical bytes + hash function (e.g., sha256 of normalized envelope subset) in `identity.ts` tests, include collision and cross-version stability cases, and reject empty/missing digest inputs.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-003",
+      "concern": "malformed-envelope quarantine uses a 'safe-derived digest' when the envelope fails to decode, but the derivation algorithm, key space, and collision/idempotency behavior are not specified.",
+      "severity": "HIGH",
+      "severity_score": 760,
+      "why_matters": "If digest derivation is unstable or collides across distinct bad payloads, quarantine rows may overwrite, duplicate unboundedly, or prevent later successful ingestion of a fixed payload sharing an identity key.",
+      "location": "Sprint 2 S2-T5 (ParseError→malformed-envelope quarantine)",
+      "recommendation": "Specify exact digest inputs (raw bytes hash, length caps, encoding), whether quarantine keys use that digest as upstreamEventId surrogate, and tests for stability, collision resistance, and non-interference with later valid events.",
+      "source": "tertiary_skeptic"
+    }
+  ],
+  "degraded": false,
+  "degraded_model": null,
+  "confidence": "single_model",
+  "phase": "sprint",
+  "document": "grimoires/loa/sprint.md",
+  "domain": "definition of green every sprint",
+  "tertiary_model_used": "grok-headless",
+  "tertiary_status": "active",
+  "execution": {
+    "mode": "hitl",
+    "mode_reason": "Simstim workflow active (.run/simstim-state.json state=RUNNING)",
+    "run_id": null
+  },
+  "timestamp": "2026-07-15T19:12:41Z",
+  "metrics": {
+    "total_latency_ms": 92000,
+    "cost_cents": 0,
+    "cost_usd": 0
+  }
+}

@@ -159,8 +159,13 @@ generate_from_pr_metadata() {
 
   # Categorize from conventional commit subjects
   local prev_tag
+  # Absorb grep's no-match exit (same rationale as the commits pipeline):
+  # in a repo with no version tags — every fresh repo, and every CI run
+  # that reaches this tier because gh is unauthenticated — grep exits 1
+  # and `set -eo pipefail` would otherwise kill the script MID-OUTPUT
+  # (header printed, no PR link / footer, rc=1). #953 CI-only class.
   prev_tag=$(git -C "$PROJECT_ROOT" tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | \
-    grep -A1 "^v${version}$" | tail -1)
+    { grep -A1 "^v${version}$" || true; } | tail -1)
 
   if [[ -z "$prev_tag" || "$prev_tag" == "v${version}" ]]; then
     prev_tag=""
@@ -202,8 +207,13 @@ generate_from_commits() {
   local version="$1"
 
   local prev_tag
+  # Absorb grep's no-match exit (same rationale as the commits pipeline):
+  # in a repo with no version tags — every fresh repo, and every CI run
+  # that reaches this tier because gh is unauthenticated — grep exits 1
+  # and `set -eo pipefail` would otherwise kill the script MID-OUTPUT
+  # (header printed, no PR link / footer, rc=1). #953 CI-only class.
   prev_tag=$(git -C "$PROJECT_ROOT" tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | \
-    grep -A1 "^v${version}$" | tail -1)
+    { grep -A1 "^v${version}$" || true; } | tail -1)
 
   if [[ -z "$prev_tag" || "$prev_tag" == "v${version}" ]]; then
     prev_tag=""
@@ -211,8 +221,21 @@ generate_from_commits() {
 
   local range="${prev_tag:+${prev_tag}..}v${version}"
 
+  # Absorb `grep -vE` no-match exits (triggers `set -eo pipefail` otherwise when
+  # the log range is empty or the filter rejects everything). Narrow the
+  # suppression to the grep step so genuine git log errors that DO produce
+  # output still surface normally (git log with permission issues returns
+  # empty + 128; with invalid range returns empty + 128 after 2>/dev/null
+  # already silences the stderr). Use `-20` on git log instead of `head -20`
+  # to eliminate SIGPIPE-on-early-close edges under pipefail.
+  #
+  # Design note: this is the Tier 3 fallback template. If git log fails
+  # outright, the branch below emits `Release v${version}.` as a generic
+  # fallback — that is the INTENDED behavior of a fallback generator (user
+  # sees a note rather than a crash). Upstream callers check the extracted
+  # result, not the exit code.
   local commits
-  commits=$(git -C "$PROJECT_ROOT" log "${range}" --format='- %s' 2>/dev/null | grep -vE '^- (Merge|chore\(release\))' | head -20)
+  commits=$(git -C "$PROJECT_ROOT" log -20 "${range}" --format='- %s' 2>/dev/null | { grep -vE '^- (Merge|chore\(release\))' || true; }) || commits=""
 
   if [[ -z "$commits" ]]; then
     echo "Release v${version}."

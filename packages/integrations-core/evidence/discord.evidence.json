@@ -1,0 +1,25 @@
+{
+  "provider": "discord",
+  "contractVersion": "discord@v10-wave1",
+  "sourceRefs": [
+    "source/discord.rest.source.json",
+    "source/discord.gateway.source.json"
+  ],
+  "generatorVersion": "design-level-no-generator",
+  "patchSetDigest": "none",
+  "coverageRef": "coverage/discord.coverage.json",
+  "staticResults": "typecheck + tests green (bun test packages)",
+  "liveResults": "tier-2-deferred",
+  "testEnv": "in-memory",
+  "productionReadiness": "non-production",
+  "knownLimitations": [
+    "Wave-1 ingestion spine is NON-PRODUCTION: in-memory Ref store, not crash-safe / cross-process / DB-transactional (§17.6).",
+    "First disposition is sticky; poison-pill conflict has no recovery path until the durable-store ADR is implemented (§16.4 / §17.6).",
+    "No transport this wave: Gateway/webhook receipt, resume/sequence-gap replay, and Ed25519 signature verification are Tier-2 (§17.7).",
+    "GUILD_MEMBER_REMOVE cannot distinguish leave vs kick vs ban.",
+    "upstreamEventId is transport-assigned; durable Discord identity from Gateway session/sequence is Tier-2 (§17.1).",
+    "Evidence generation uses a wave-1 self-attested --tests-passed flag; wave-2 must bind the receipt to a CI test-artifact digest + commit SHA (flatline code-review 720/730).",
+    "Identical malformed inputs collapse into one quarantine record (idempotent by design); per-delivery occurrence counts/timestamps are deferred (flatline code-review 760)."
+  ],
+  "approvalState": "unpublished"
+}

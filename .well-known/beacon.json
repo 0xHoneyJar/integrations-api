@@ -1,0 +1,65 @@
+{
+  "schema_version": "3",
+  "slug": "integrations-api",
+  "publisher": "0xHoneyJar",
+  "is": {
+    "one_liner": "Evidence-backed provider ingress that normalizes external events into bounded Freeside observations",
+    "scope": [
+      "Normalize versioned provider events into privacy-bounded Freeside observations",
+      "Disposition events as projected, ignored, quarantined, duplicate, or conflict",
+      "Publish source, coverage, and evidence artifacts for each provider contract",
+      "Expose provider-keyed adapters behind one typed ingestion boundary",
+      "Preserve medium-registry as a separate presentation compatibility surface"
+    ]
+  },
+  "is_not": [
+    "Does NOT claim production durability until a transactional IngestionStore passes conformance",
+    "Does NOT own provider credentials, Gateway sessions, webhooks, or transport lifecycle",
+    "Does NOT resolve identity or write activity, score, inventory, or storage state",
+    "Will NOT silently discard unknown, malformed, duplicate, or conflicting events",
+    "Refuses to fold presentation rendering contracts into provider-ingestion contracts"
+  ],
+  "composes_with": {},
+  "acvp_invariants": [
+    {
+      "id": "idempotency",
+      "scope": "Tenant-scoped event identity makes re-delivery duplicate and payload drift conflict",
+      "proof_artifact": "packages/integrations-core/tests/identity.test.ts",
+      "private": false,
+      "status": "active",
+      "runtime_class": "construct-local"
+    },
+    {
+      "id": "state_machine_totality",
+      "scope": "The Discord admitted surface and adapter dispositions stay classification-complete",
+      "proof_artifact": "packages/integrations-core/tests/coverage.test.ts",
+      "private": false,
+      "status": "active",
+      "runtime_class": "construct-local"
+    },
+    {
+      "id": "schema_enforcement",
+      "scope": "Envelopes, observations, dispositions, results, sources, coverage, and evidence decode",
+      "proof_artifact": "packages/integrations-core/tests/schema.test.ts",
+      "private": false,
+      "status": "active",
+      "runtime_class": "construct-local"
+    }
+  ],
+  "sealed_schemas": [],
+  "capabilities": [
+    "ingestUnknown",
+    "RawEventEnvelope",
+    "IngestionResult",
+    "IngestionStore",
+    "AdapterRegistry",
+    "DiscordAdapterRegistryLayer",
+    "MediumCapability",
+    "renderVerifyMessageToDiscord"
+  ],
+  "cycle_state": {
+    "status": "candidate",
+    "since": "2026-07-15",
+    "next_review": "2026-10-13"
+  }
+}

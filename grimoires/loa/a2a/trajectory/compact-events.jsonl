@@ -1,0 +1,15 @@
+{"event":"compact_recovery","timestamp":"2026-07-15T20:07:06Z","context":{
+  "timestamp": "2026-07-15T19:43:36Z",
+  "project_root": "/Users/zksoju/bonfire",
+  "run_mode": {
+    "active": false,
+    "state": ""
+  },
+  "simstim": {
+    "active": true,
+    "phase": "implementation"
+  },
+  "current_skill": "unknown",
+  "current_phase": "unknown",
+  "current_task": "unknown"
+}}

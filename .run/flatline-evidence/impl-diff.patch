@@ -1,0 +1,2064 @@
+diff --git a/packages/integrations-core/README.md b/packages/integrations-core/README.md
+new file mode 100644
+index 0000000..6171990
+--- /dev/null
++++ b/packages/integrations-core/README.md
+@@ -0,0 +1,19 @@
++# @0xhoneyjar/integrations-core
++
++Core of the Freeside **integrations** building (federation slug `integrations-api`) —
++the evolution of `freeside-mediums`. Provider behavior (Discord first) enters Freeside
++through a versioned, evidence-backed contract, and **every received event has a durable,
++explainable disposition** — `projected` / `ignored` / `quarantined` / `duplicate` /
++`conflict`, with zero silent drops.
++
++> **Wave-1 status: NON-PRODUCTION reference.** In-memory, deterministic, offline. No
++> secrets, no network, no database. The atomic `IngestionStore` is proven via `Ref`
++> linearizability; a production transactional backend must preserve the same observable
++> contract before this spine is used in production. See the durable-store ADR.
++
++Sibling package `@0xhoneyjar/medium-registry` (unchanged) remains the **presentation
++capability** domain and compatibility surface. This package is additive.
++
++Effect peer dependency is pinned `>=3.21.2 <4` (the range proven by typecheck).
++
++Design + governance: `grimoires/loa/{prd,sdd,sprint}.md`.
+diff --git a/packages/integrations-core/evidence/discord.evidence.json b/packages/integrations-core/evidence/discord.evidence.json
+new file mode 100644
+index 0000000..9c829f8
+--- /dev/null
++++ b/packages/integrations-core/evidence/discord.evidence.json
+@@ -0,0 +1,23 @@
++{
++  "provider": "discord",
++  "contractVersion": "discord@v10-wave1",
++  "sourceRefs": [
++    "source/discord.rest.source.json",
++    "source/discord.gateway.source.json"
++  ],
++  "generatorVersion": "design-level-no-generator",
++  "patchSetDigest": "none",
++  "coverageRef": "coverage/discord.coverage.json",
++  "staticResults": "typecheck + tests green (bun test packages)",
++  "liveResults": "tier-2-deferred",
++  "testEnv": "in-memory",
++  "productionReadiness": "non-production",
++  "knownLimitations": [
++    "Wave-1 ingestion spine is NON-PRODUCTION: in-memory Ref store, not crash-safe / cross-process / DB-transactional (§17.6).",
++    "First disposition is sticky; poison-pill conflict has no recovery path until the durable-store ADR is implemented (§16.4 / §17.6).",
++    "No transport this wave: Gateway/webhook receipt, resume/sequence-gap replay, and Ed25519 signature verification are Tier-2 (§17.7).",
++    "GUILD_MEMBER_REMOVE cannot distinguish leave vs kick vs ban.",
++    "upstreamEventId is transport-assigned; durable Discord identity from Gateway session/sequence is Tier-2 (§17.1)."
++  ],
++  "approvalState": "unpublished"
++}
+diff --git a/packages/integrations-core/package.json b/packages/integrations-core/package.json
+new file mode 100644
+index 0000000..fdd2bd6
+--- /dev/null
++++ b/packages/integrations-core/package.json
+@@ -0,0 +1,54 @@
++{
++  "name": "@0xhoneyjar/integrations-core",
++  "version": "0.1.0",
++  "private": true,
++  "description": "Freeside integrations building core — provider-behavior contracts + in-memory ingestion harness + Discord reference vertical. Every received event has a durable, explainable disposition (projected/ignored/quarantined/duplicate/conflict); zero silent drops. Wave-1 NON-PRODUCTION reference (in-memory, deterministic, no secrets/network). Sibling to @0xhoneyjar/medium-registry (presentation domain, unchanged).",
++  "license": "MIT",
++  "type": "module",
++  "main": "./dist/index.js",
++  "types": "./dist/index.d.ts",
++  "exports": {
++    ".": {
++      "types": "./dist/index.d.ts",
++      "import": "./dist/index.js"
++    }
++  },
++  "files": [
++    "dist",
++    "src",
++    "source",
++    "coverage",
++    "evidence",
++    "README.md"
++  ],
++  "scripts": {
++    "build": "tsc -b --force",
++    "typecheck": "tsc --noEmit",
++    "test": "bun test",
++    "coverage:build": "bun scripts/build-coverage.ts",
++    "clean": "rm -rf dist tsconfig.tsbuildinfo"
++  },
++  "repository": {
++    "type": "git",
++    "url": "https://github.com/0xHoneyJar/freeside-mediums.git",
++    "directory": "packages/integrations-core"
++  },
++  "keywords": [
++    "freeside",
++    "integrations",
++    "discord",
++    "ingestion",
++    "disposition",
++    "effect",
++    "governance"
++  ],
++  "peerDependencies": {
++    "effect": ">=3.21.2 <4"
++  },
++  "devDependencies": {
++    "@0xhoneyjar/medium-registry": "workspace:*",
++    "@types/bun": "latest",
++    "effect": ">=3.21.2 <4",
++    "typescript": "^5.7.0"
++  }
++}
+diff --git a/packages/integrations-core/scripts/build-coverage.ts b/packages/integrations-core/scripts/build-coverage.ts
+new file mode 100644
+index 0000000..e7770d1
+--- /dev/null
++++ b/packages/integrations-core/scripts/build-coverage.ts
+@@ -0,0 +1,41 @@
++#!/usr/bin/env bun
++/**
++ * build-coverage — emit the Discord coverage report + evidence receipt from the
++ * single classification table (§16.11). FAIL-CLOSED: pass `--tests-passed` (or
++ * INTEGRATIONS_TESTS_PASSED=1) only after the suite is green; otherwise the
++ * script refuses to emit an evidence receipt.
++ *
++ *   bun scripts/build-coverage.ts --tests-passed
++ */
++import { mkdirSync, writeFileSync } from "node:fs";
++import { dirname, join } from "node:path";
++import { fileURLToPath } from "node:url";
++import { Schema } from "effect";
++import { CoverageManifest } from "../src/protocol/coverage.js";
++import { EvidenceReceipt } from "../src/protocol/source.js";
++import {
++  assertTestsPassed,
++  discordCoverageManifest,
++  discordEvidenceReceipt,
++} from "../src/coverage-build.js";
++
++const testsPassed =
++  process.argv.includes("--tests-passed") || process.env.INTEGRATIONS_TESTS_PASSED === "1";
++assertTestsPassed(testsPassed);
++
++const pkgRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
++// Stable generation timestamp (cycle date) so re-runs don't churn the artifact.
++const generatedAt = process.env.INTEGRATIONS_GENERATED_AT ?? "2026-07-15T00:00:00Z";
++
++const coverage = discordCoverageManifest(generatedAt);
++const evidence = discordEvidenceReceipt("coverage/discord.coverage.json");
++
++const write = <A, I>(rel: string, schema: Schema.Schema<A, I>, value: A): void => {
++  const path = join(pkgRoot, rel);
++  mkdirSync(dirname(path), { recursive: true });
++  writeFileSync(path, `${JSON.stringify(Schema.encodeSync(schema)(value), null, 2)}\n`);
++  console.log(`wrote ${rel}`);
++};
++
++write("coverage/discord.coverage.json", CoverageManifest, coverage);
++write("evidence/discord.evidence.json", EvidenceReceipt, evidence);
+diff --git a/packages/integrations-core/source/discord.gateway.source.json b/packages/integrations-core/source/discord.gateway.source.json
+new file mode 100644
+index 0000000..c732dca
+--- /dev/null
++++ b/packages/integrations-core/source/discord.gateway.source.json
+@@ -0,0 +1,21 @@
++{
++  "provider": "discord",
++  "sourceClass": "event-catalog",
++  "url": "https://docs.discord.com/developers/topics/gateway-events",
++  "ref": "gateway-events (Discord API v10) — snapshot 2026-07-15",
++  "retrievedAt": "2026-07-15T00:00:00Z",
++  "generator": "design-level-no-generator",
++  "generatorVersion": "wave-1",
++  "discovered": [
++    "GUILD_MEMBER_ADD (guild_id, user{id}, roles[], joined_at, nick)",
++    "GUILD_MEMBER_UPDATE (guild_id, user{id}, roles[], ...)",
++    "GUILD_MEMBER_REMOVE (guild_id, user{id})",
++    "MESSAGE_CREATE (content) — excluded from the Tier-1 member graph",
++    "Session lifecycle (Tier-2, not wave-1): HELLO(10), READY(0), RESUMED(0), INVALID_SESSION(9), RECONNECT(7), Heartbeat(1); sequence s drives resume replay"
++  ],
++  "patches": [],
++  "validation": {
++    "semanticFocus": "Verified member event names + payload fields and session-lifecycle event names against the primary source 2026-07-15.",
++    "sourceDomain": "docs.discord.com/developers (official Discord)"
++  }
++}
+diff --git a/packages/integrations-core/source/discord.rest.source.json b/packages/integrations-core/source/discord.rest.source.json
+new file mode 100644
+index 0000000..7298995
+--- /dev/null
++++ b/packages/integrations-core/source/discord.rest.source.json
+@@ -0,0 +1,17 @@
++{
++  "provider": "discord",
++  "sourceClass": "openapi",
++  "url": "https://github.com/discord/discord-api-spec",
++  "ref": "specs/openapi.json + specs/openapi_preview.json (OpenAPI 3.1, Discord API v10)",
++  "retrievedAt": "2026-07-15T00:00:00Z",
++  "generator": "design-level-no-generator",
++  "generatorVersion": "wave-1",
++  "discovered": [
++    "REST surface is design-level this wave; ingestion is Gateway-event driven. REST success is verified out of band per architecture §7."
++  ],
++  "patches": [],
++  "validation": {
++    "semanticFocus": "Confirmed the official Discord OpenAPI repo publishes specs/openapi.json (stable) + specs/openapi_preview.json (preview, breaking changes without notice), OpenAPI 3.1, API v10.",
++    "sourceDomain": "github.com/discord/discord-api-spec (official Discord)"
++  }
++}
+diff --git a/packages/integrations-core/src/coverage-build.ts b/packages/integrations-core/src/coverage-build.ts
+new file mode 100644
+index 0000000..912dffb
+--- /dev/null
++++ b/packages/integrations-core/src/coverage-build.ts
+@@ -0,0 +1,74 @@
++/**
++ * Coverage + evidence builders (SDD §8, PRD §11.6, §16.11).
++ *
++ * Coverage is derived from the single `DISCORD_CLASSIFICATION` table. Both
++ * builders validate their output against the protocol schemas (fail-closed on
++ * any schema violation). `assertTestsPassed` enforces fail-closed generation:
++ * no evidence receipt is emitted when tests did not pass.
++ */
++import { Schema } from "effect";
++import { CoverageManifest } from "./protocol/coverage.js";
++import { EvidenceReceipt } from "./protocol/source.js";
++import { DISCORD_CLASSIFICATION } from "./providers/discord.js";
++
++export const CONTRACT_VERSION = "discord@v10-wave1";
++
++const DIMENSIONS = [
++  { dimension: "discovery", claim: "All wave-1 admitted Gateway member events classified; any other event → quarantine (no silent drop)." },
++  { dimension: "generation", claim: "Design-level: REST + Gateway source manifests pinned; no generator runtime this wave (INV-4)." },
++  { dimension: "behavior", claim: "ADD/UPDATE/REMOVE decode to observations; malformed payload → AdapterContractError → quarantine." },
++  { dimension: "ingestion", claim: "Every event terminates committed/duplicate/conflict/quarantine, or fails loudly (INV-1)." },
++  { dimension: "reconciliation", claim: "Tier-2 deferred — no live Gateway replay/backfill this wave." },
++  { dimension: "lifecycle", claim: "In-memory commit/duplicate/conflict tested; durable CRUD is Tier-2 (durable-store ADR)." },
++  { dimension: "evidence", claim: "REST + Gateway source manifests + this coverage report + the evidence receipt." },
++] as const;
++
++export const KNOWN_LIMITATIONS: ReadonlyArray<string> = [
++  "Wave-1 ingestion spine is NON-PRODUCTION: in-memory Ref store, not crash-safe / cross-process / DB-transactional (§17.6).",
++  "First disposition is sticky; poison-pill conflict has no recovery path until the durable-store ADR is implemented (§16.4 / §17.6).",
++  "No transport this wave: Gateway/webhook receipt, resume/sequence-gap replay, and Ed25519 signature verification are Tier-2 (§17.7).",
++  "GUILD_MEMBER_REMOVE cannot distinguish leave vs kick vs ban.",
++  "upstreamEventId is transport-assigned; durable Discord identity from Gateway session/sequence is Tier-2 (§17.1).",
++];
++
++/** Build + validate the Discord coverage manifest (fail-closed on schema drift). */
++export const discordCoverageManifest = (
++  generatedAt: string,
++): typeof CoverageManifest.Type =>
++  Schema.decodeUnknownSync(CoverageManifest)({
++    provider: "discord",
++    contractVersion: CONTRACT_VERSION,
++    dimensions: DIMENSIONS.map((d) => ({ ...d })),
++    surface: DISCORD_CLASSIFICATION.map((s) => ({ ...s })),
++    generatedAt,
++  });
++
++/** Build + validate the Discord evidence receipt (fail-closed on schema drift). */
++export const discordEvidenceReceipt = (
++  coverageRef: string,
++): typeof EvidenceReceipt.Type =>
++  Schema.decodeUnknownSync(EvidenceReceipt)({
++    provider: "discord",
++    contractVersion: CONTRACT_VERSION,
++    sourceRefs: ["source/discord.rest.source.json", "source/discord.gateway.source.json"],
++    generatorVersion: "design-level-no-generator",
++    patchSetDigest: "none",
++    coverageRef,
++    staticResults: "typecheck + tests green (bun test packages)",
++    liveResults: "tier-2-deferred",
++    testEnv: "in-memory",
++    productionReadiness: "non-production",
++    knownLimitations: [...KNOWN_LIMITATIONS],
++    approvalState: "unpublished",
++  });
++
++export class CoverageBuildError extends Error {}
++
++/** Fail-closed guard (§16.11): refuse to emit evidence when tests did not pass. */
++export const assertTestsPassed = (passed: boolean): void => {
++  if (!passed) {
++    throw new CoverageBuildError(
++      "fail-closed: refusing to emit a coverage/evidence receipt when tests did not pass (§16.11)",
++    );
++  }
++};
+diff --git a/packages/integrations-core/src/errors.ts b/packages/integrations-core/src/errors.ts
+new file mode 100644
+index 0000000..18b5860
+--- /dev/null
++++ b/packages/integrations-core/src/errors.ts
+@@ -0,0 +1,26 @@
++/**
++ * Typed error channels (SDD §6.1 / §16.3).
++ *
++ * `AdapterContractError` is the ONLY error that converts to a Quarantined
++ * disposition (provider decode/contract mismatch). `IngestionStoreError`
++ * surfaces loudly (retryable) and is NEVER laundered into a quarantine —
++ * infrastructure failures must not masquerade as provider "drift".
++ */
++import { Schema } from "effect";
++
++export class AdapterContractError extends Schema.TaggedError<AdapterContractError>()(
++  "AdapterContractError",
++  {
++    provider: Schema.String,
++    eventType: Schema.String,
++    reason: Schema.String,
++  },
++) {}
++
++export class IngestionStoreError extends Schema.TaggedError<IngestionStoreError>()(
++  "IngestionStoreError",
++  {
++    operation: Schema.String,
++    cause: Schema.Unknown,
++  },
++) {}
+diff --git a/packages/integrations-core/src/identity.ts b/packages/integrations-core/src/identity.ts
+new file mode 100644
+index 0000000..cf078eb
+--- /dev/null
++++ b/packages/integrations-core/src/identity.ts
+@@ -0,0 +1,86 @@
++/**
++ * Event identity + canonicalization (SDD §16.1 / §16.2 / §16.9 / §17.2 / §17.8).
++ *
++ * - Canonicalization: JSON values only, recursively sorted object keys, arrays
++ *   order-preserved. Non-serializable input (circular / bigint / function /
++ *   undefined) throws → the caller quarantines (malformed).
++ * - Idempotency key includes tenantId (connectionId is NOT assumed globally
++ *   unique). Returns null when the transport-assigned upstream id is absent →
++ *   caller quarantines `missing-event-id` (never a content-derived key, which
++ *   would risk collapsing distinct events).
++ * - Quarantine records have their OWN identity, separate from event keys.
++ */
++import { createHash } from "node:crypto";
++import type { RawEventEnvelope } from "./protocol/envelope.js";
++
++const MAX_SAFE_INPUT_BYTES = 65536; // 64 KiB cap for malformed-input digests
++
++/**
++ * Deterministic canonical JSON. Throws TypeError on non-serializable input so
++ * the caller can convert to a quarantine rather than silently mis-hashing.
++ */
++export const stableStringify = (value: unknown): string => {
++  const seen = new WeakSet<object>();
++  const norm = (v: unknown): unknown => {
++    if (v === null) return null;
++    const t = typeof v;
++    if (t === "bigint" || t === "function" || t === "undefined" || t === "symbol") {
++      throw new TypeError(`non-serializable value of type ${t}`);
++    }
++    if (t !== "object") return v;
++    const obj = v as object;
++    if (seen.has(obj)) throw new TypeError("circular reference");
++    seen.add(obj);
++    if (Array.isArray(obj)) return obj.map(norm);
++    const out: Record<string, unknown> = {};
++    for (const k of Object.keys(obj as Record<string, unknown>).sort()) {
++      out[k] = norm((obj as Record<string, unknown>)[k]);
++    }
++    return out;
++  };
++  return JSON.stringify(norm(value));
++};
++
++const sha256Hex = (s: string): string =>
++  createHash("sha256").update(s, "utf8").digest("hex");
++
++/** Canonical payload digest. Throws on non-serializable payloads (§16.9). */
++export const canonicalDigest = (payload: unknown): string =>
++  sha256Hex(stableStringify(payload));
++
++/**
++ * Idempotency key. Includes tenantId (§16.1). Returns null when the
++ * transport-assigned upstreamEventId is absent/empty (§16.2).
++ */
++export const idempotencyKey = (envelope: RawEventEnvelope): string | null => {
++  const id = envelope.upstreamEventId;
++  if (!id || id.length === 0) return null;
++  return `${envelope.tenantId}:${envelope.provider}:${envelope.connectionId}:${id}`;
++};
++
++/**
++ * Length-capped digest that NEVER throws — used for quarantine records of
++ * malformed/non-serializable inputs (§17.8). Falls back to a best-effort string
++ * form when canonicalization fails.
++ */
++export const safeDigest = (input: unknown): string => {
++  let s: string;
++  try {
++    s = stableStringify(input);
++  } catch {
++    s = typeof input === "string" ? input : String(input);
++  }
++  if (s.length > MAX_SAFE_INPUT_BYTES) s = s.slice(0, MAX_SAFE_INPUT_BYTES);
++  return sha256Hex(s);
++};
++
++/**
++ * Quarantine-record identity — SEPARATE from event idempotency keys (§17.2), so
++ * a null-keyed or malformed event still gets a durable, non-colliding record.
++ */
++export const quarantineKey = (
++  provider: string,
++  tenantId: string,
++  connectionId: string,
++  digest: string,
++): string => `quarantine:${tenantId}:${provider}:${connectionId}:${digest}`;
+diff --git a/packages/integrations-core/src/index.ts b/packages/integrations-core/src/index.ts
+new file mode 100644
+index 0000000..74fba88
+--- /dev/null
++++ b/packages/integrations-core/src/index.ts
+@@ -0,0 +1,47 @@
++/**
++ * `@0xhoneyjar/integrations-core` — Freeside integrations building core.
++ *
++ * Wave-1 NON-PRODUCTION reference vertical (in-memory, deterministic, no
++ * secrets/network). Every received event has a durable, explainable disposition
++ * (INV-1); zero silent drops.
++ *
++ * Public surface (grows per sprint):
++ *   - protocol schemas (provider, envelope, observation, disposition, result,
++ *     coverage, source)
++ *   - identity helpers (canonicalDigest, idempotencyKey, safeDigest, quarantineKey)
++ *   - typed errors (AdapterContractError, IngestionStoreError)
++ *
++ * NOTE (§17.4): the ingestion boundary exported in later sprints is
++ * `ingestUnknown` ONLY. `ingestEnvelope` is internal and never exported.
++ */
++export * from "./protocol/index.js";
++export * from "./errors.js";
++export {
++  canonicalDigest,
++  idempotencyKey,
++  stableStringify,
++  safeDigest,
++  quarantineKey,
++} from "./identity.js";
++
++// Ingestion boundary — `ingestUnknown` ONLY (§17.4). `ingestEnvelope` is
++// internal and intentionally NOT re-exported here.
++export { ingestUnknown } from "./ingest.js";
++export {
++  AdapterRegistry,
++  AdapterRegistryLayer,
++  IngestionStore,
++  InMemoryIngestionStoreLayer,
++  makeAdapterRegistry,
++} from "./services.js";
++export type {
++  AdapterFn,
++  AdapterRegistryShape,
++  CommitOutcome,
++  IngestionStoreShape,
++  QuarantineOutcome,
++} from "./services.js";
++export { annotateDisposition, annotateIdentity } from "./telemetry.js";
++
++// Discord reference vertical (§7 / §11.4)
++export { discordAdapter, DiscordAdapterRegistryLayer } from "./providers/discord.js";
+diff --git a/packages/integrations-core/src/ingest.ts b/packages/integrations-core/src/ingest.ts
+new file mode 100644
+index 0000000..9fa8a92
+--- /dev/null
++++ b/packages/integrations-core/src/ingest.ts
+@@ -0,0 +1,185 @@
++/**
++ * Ingestion orchestration — the correctness spine (AD-4, SDD §6.3 / §16 / §17).
++ *
++ * `ingestUnknown` is the SOLE public boundary (§17.4): it owns envelope decode
++ * and its malformed-envelope quarantine. `ingestEnvelope` is INTERNAL (never
++ * exported from the package barrel).
++ *
++ * Failure taxonomy (§16.3) — the load-bearing invariant:
++ *   - typed `AdapterContractError`        → Quarantined{malformed-payload}
++ *   - missing transport id                → Quarantined{missing-event-id}
++ *   - rawPayloadHash ≠ computed            → Quarantined{hash-mismatch}
++ *   - unknown/unregistered provider        → Quarantined{unknown-provider}
++ *   - non-serializable payload             → Quarantined{malformed-payload}
++ *   - store commit failure (IngestionStoreError) → SURFACES (retryable)
++ *   - unexpected defect                    → propagates (die) — never laundered
++ * Every RawEventEnvelope terminates as Committed | Duplicate | Conflict, or
++ * fails loudly. No silent drops (INV-1).
++ */
++import { Effect, Schema } from "effect";
++import { RawEventEnvelope } from "./protocol/envelope.js";
++import { Quarantined, type IngestionDisposition } from "./protocol/disposition.js";
++import {
++  Committed,
++  Conflict,
++  Duplicate,
++  type IngestionResult,
++} from "./protocol/result.js";
++import { canonicalDigest, idempotencyKey, quarantineKey, safeDigest } from "./identity.js";
++import { AdapterRegistry, IngestionStore } from "./services.js";
++import { annotateDisposition, annotateIdentity } from "./telemetry.js";
++
++/** Persist a quarantine record under its own identity and build the result. */
++const commitQuarantine = (envelope: RawEventEnvelope, q: Quarantined) =>
++  Effect.gen(function* () {
++    const store = yield* IngestionStore;
++    const qkey = quarantineKey(
++      envelope.provider,
++      envelope.tenantId,
++      envelope.connectionId,
++      q.payloadDigest,
++    );
++    yield* annotateDisposition(q._tag, q.reason);
++    const status = yield* store.quarantine(qkey, q);
++    return status === "duplicate"
++      ? new Duplicate({ idempotencyKey: qkey, upstreamEventId: envelope.upstreamEventId })
++      : new Committed({
++          idempotencyKey: qkey,
++          upstreamEventId: envelope.upstreamEventId,
++          disposition: q,
++        });
++  });
++
++/** INTERNAL — post-decode orchestration. Not exported from the barrel (§17.4). */
++export const ingestEnvelope = Effect.fn("Integrations.ingestEnvelope")(function* (
++  envelope: RawEventEnvelope,
++) {
++  const registry = yield* AdapterRegistry;
++  const store = yield* IngestionStore;
++
++  const key = idempotencyKey(envelope);
++  yield* annotateIdentity(envelope, key);
++
++  // Non-serializable payload → malformed-payload quarantine (§16.9), never a defect.
++  let digest: string;
++  try {
++    digest = canonicalDigest(envelope.payload);
++  } catch {
++    return yield* commitQuarantine(
++      envelope,
++      new Quarantined({
++        reason: "malformed-payload",
++        patchCandidate: true,
++        payloadDigest: safeDigest(envelope.payload),
++        eventType: envelope.eventType,
++      }),
++    );
++  }
++
++  // §16.2 absent transport id → quarantine (no content-fallback key).
++  if (key === null) {
++    return yield* commitQuarantine(
++      envelope,
++      new Quarantined({
++        reason: "missing-event-id",
++        patchCandidate: false,
++        payloadDigest: digest,
++        eventType: envelope.eventType,
++      }),
++    );
++  }
++
++  // §16.7 rawPayloadHash claim must match the computed digest.
++  if (envelope.rawPayloadHash !== undefined && envelope.rawPayloadHash !== digest) {
++    return yield* commitQuarantine(
++      envelope,
++      new Quarantined({
++        reason: "hash-mismatch",
++        patchCandidate: false,
++        payloadDigest: digest,
++        eventType: envelope.eventType,
++      }),
++    );
++  }
++
++  // §16.8 unknown/unregistered provider → quarantine BEFORE normalize.
++  if (!registry.has(envelope.provider)) {
++    return yield* commitQuarantine(
++      envelope,
++      new Quarantined({
++        reason: "unknown-provider",
++        patchCandidate: false,
++        payloadDigest: digest,
++        eventType: envelope.eventType,
++      }),
++    );
++  }
++
++  // Normalize — ONLY AdapterContractError converts to Quarantined. Store errors
++  // and unexpected defects are NOT caught here (they surface / propagate).
++  const disposition: IngestionDisposition = yield* registry.normalize(envelope).pipe(
++    Effect.catchTag("AdapterContractError", () =>
++      Effect.succeed(
++        new Quarantined({
++          reason: "malformed-payload",
++          patchCandidate: true,
++          payloadDigest: digest,
++          eventType: envelope.eventType,
++        }),
++      ),
++    ),
++  );
++  yield* annotateDisposition(
++    disposition._tag,
++    "reason" in disposition ? disposition.reason : undefined,
++  );
++
++  const outcome = yield* store.commit(key, digest, disposition);
++  switch (outcome._tag) {
++    case "committed":
++      return new Committed({
++        idempotencyKey: key,
++        upstreamEventId: envelope.upstreamEventId,
++        disposition,
++      });
++    case "duplicate":
++      return new Duplicate({ idempotencyKey: key, upstreamEventId: envelope.upstreamEventId });
++    case "conflict":
++      return new Conflict({
++        idempotencyKey: key,
++        priorDigest: outcome.priorDigest,
++        newDigest: digest,
++      });
++  }
++});
++
++/**
++ * PUBLIC boundary (§17.4). Owns envelope decode: a `ParseError` becomes a
++ * durable `malformed-envelope` quarantine with a safely-derived digest and a
++ * placeholder event type — untrusted fields are never propagated.
++ */
++export const ingestUnknown = Effect.fn("Integrations.ingestUnknown")(function* (
++  input: unknown,
++) {
++  const store = yield* IngestionStore;
++  const decoded = yield* Schema.decodeUnknown(RawEventEnvelope)(input).pipe(Effect.either);
++
++  if (decoded._tag === "Left") {
++    const digest = safeDigest(input);
++    const q = new Quarantined({
++      reason: "malformed-envelope",
++      patchCandidate: false,
++      payloadDigest: digest,
++      eventType: "(undecodable)",
++    });
++    const qkey = quarantineKey("unknown", "unknown", "unknown", digest);
++    const status = yield* store.quarantine(qkey, q);
++    const result: IngestionResult =
++      status === "duplicate"
++        ? new Duplicate({ idempotencyKey: qkey })
++        : new Committed({ idempotencyKey: qkey, disposition: q });
++    return result;
++  }
++
++  return yield* ingestEnvelope(decoded.right);
++});
+diff --git a/packages/integrations-core/src/protocol/coverage.ts b/packages/integrations-core/src/protocol/coverage.ts
+new file mode 100644
+index 0000000..d849bc4
+--- /dev/null
++++ b/packages/integrations-core/src/protocol/coverage.ts
+@@ -0,0 +1,44 @@
++/**
++ * Coverage manifest — the 7-dimension coverage vector (SDD §8, PRD §11.6).
++ *
++ * "100% coverage" = complete surface classification + complete Tier-1
++ * conformance + zero silent ingestion loss (INV-9). `Tier` is imported from
++ * disposition.ts (single definition, §16.10).
++ */
++import { Schema } from "effect";
++import { Provider } from "./provider.js";
++import { ReasonCode, Tier } from "./disposition.js";
++
++export const CoverageDimension = Schema.Literal(
++  "discovery",
++  "generation",
++  "behavior",
++  "ingestion",
++  "reconciliation",
++  "lifecycle",
++  "evidence",
++);
++export type CoverageDimension = typeof CoverageDimension.Type;
++
++/** One admitted surface entry classified by tier + disposition. */
++export const SurfaceEntry = Schema.Struct({
++  event: Schema.NonEmptyString,
++  tier: Tier,
++  disposition: Schema.String,
++  reasonCode: Schema.optional(ReasonCode),
++});
++export type SurfaceEntry = typeof SurfaceEntry.Type;
++
++export const DimensionClaim = Schema.Struct({
++  dimension: CoverageDimension,
++  claim: Schema.String,
++});
++
++export const CoverageManifest = Schema.Struct({
++  provider: Provider,
++  contractVersion: Schema.NonEmptyString,
++  dimensions: Schema.Array(DimensionClaim),
++  surface: Schema.Array(SurfaceEntry),
++  generatedAt: Schema.String,
++});
++export type CoverageManifest = typeof CoverageManifest.Type;
+diff --git a/packages/integrations-core/src/protocol/disposition.ts b/packages/integrations-core/src/protocol/disposition.ts
+new file mode 100644
+index 0000000..e81fea5
+--- /dev/null
++++ b/packages/integrations-core/src/protocol/disposition.ts
+@@ -0,0 +1,55 @@
++/**
++ * IngestionDisposition — what a received event MEANS (SDD §11.1 / §16.1).
++ *
++ * Distinct from IngestionResult (result.ts), which is what PERSISTENCE did.
++ * Telemetry, coverage, and tests count on these two tables only.
++ *
++ * `Tier` is defined HERE once (§16.10) and imported by coverage.ts — no
++ * duplicate Tier definitions.
++ */
++import { Schema } from "effect";
++import { Observation } from "./observation.js";
++
++/** Event criticality axis (distinct from coverage classification). */
++export const Tier = Schema.Literal("tier-1", "tier-2", "tier-3");
++export type Tier = typeof Tier.Type;
++
++/** Extensible reason-code enum for Ignored/Quarantined (SDD §16.4 / §17). */
++export const ReasonCode = Schema.Literal(
++  "message-content-excluded",
++  "unclassified-event",
++  "malformed-payload",
++  "malformed-envelope",
++  "unknown-provider",
++  "id-conflict",
++  "missing-event-id",
++  "hash-mismatch",
++);
++export type ReasonCode = typeof ReasonCode.Type;
++
++const Sha256Hex = Schema.String.pipe(Schema.pattern(/^[0-9a-f]{64}$/));
++
++/** Normalized into observations. */
++export class Projected extends Schema.TaggedClass<Projected>()("Projected", {
++  observations: Schema.Array(Observation),
++}) {}
++
++/** Classified non-domain event, ignored with a reason. */
++export class Ignored extends Schema.TaggedClass<Ignored>()("Ignored", {
++  reason: ReasonCode,
++  classification: Tier,
++}) {}
++
++/**
++ * Unknown/malformed behavior held for review. Persists a payload DIGEST, never
++ * the raw payload (SDD §11.5 forensic-vs-PII resolution; INV-8).
++ */
++export class Quarantined extends Schema.TaggedClass<Quarantined>()("Quarantined", {
++  reason: ReasonCode,
++  patchCandidate: Schema.Boolean,
++  payloadDigest: Sha256Hex,
++  eventType: Schema.String,
++}) {}
++
++export const IngestionDisposition = Schema.Union(Projected, Ignored, Quarantined);
++export type IngestionDisposition = typeof IngestionDisposition.Type;
+diff --git a/packages/integrations-core/src/protocol/envelope.ts b/packages/integrations-core/src/protocol/envelope.ts
+new file mode 100644
+index 0000000..dd9cccf
+--- /dev/null
++++ b/packages/integrations-core/src/protocol/envelope.ts
+@@ -0,0 +1,31 @@
++/**
++ * RawEventEnvelope — the boundary object the ingestion/transport layer produces
++ * for every received upstream event.
++ *
++ * Field constraints per SDD §16.10: identifiers are non-empty; rawPayloadHash,
++ * when present, is a sha256 hex claim (verified against the computed digest at
++ * ingest — §16.7). `upstreamEventId` is a TRANSPORT-assigned delivery identity
++ * (§17.1), NOT a provider-payload field — Discord Gateway events carry no
++ * durable per-event id (verified vs primary source). It is optional: an absent
++ * id is quarantined `missing-event-id` at ingest (§16.2), never content-keyed.
++ */
++import { Schema } from "effect";
++import { Provider } from "./provider.js";
++
++const NonEmpty = Schema.NonEmptyString;
++const Sha256Hex = Schema.String.pipe(Schema.pattern(/^[0-9a-f]{64}$/));
++
++export class RawEventEnvelope extends Schema.Class<RawEventEnvelope>("RawEventEnvelope")({
++  provider: Provider,
++  connectionId: NonEmpty,
++  tenantId: NonEmpty,
++  eventType: NonEmpty,
++  // transport-assigned delivery id (§17.1) — optional; absent → missing-event-id quarantine
++  upstreamEventId: Schema.optional(NonEmpty),
++  observedAt: NonEmpty,
++  receivedAt: NonEmpty,
++  sourceContractVersion: NonEmpty,
++  // untrusted claim; verified against canonicalDigest(payload) at ingest (§16.7)
++  rawPayloadHash: Schema.optional(Sha256Hex),
++  payload: Schema.Unknown,
++}) {}
+diff --git a/packages/integrations-core/src/protocol/index.ts b/packages/integrations-core/src/protocol/index.ts
+new file mode 100644
+index 0000000..3793d85
+--- /dev/null
++++ b/packages/integrations-core/src/protocol/index.ts
+@@ -0,0 +1,12 @@
++/**
++ * Protocol barrel — stable, boundary-crossing schemas for the integrations
++ * building (FR-1). Runtime clients, credentials, and provider payloads do not
++ * leak into these shared domain contracts.
++ */
++export * from "./provider.js";
++export * from "./envelope.js";
++export * from "./observation.js";
++export * from "./disposition.js";
++export * from "./result.js";
++export * from "./coverage.js";
++export * from "./source.js";
+diff --git a/packages/integrations-core/src/protocol/observation.ts b/packages/integrations-core/src/protocol/observation.ts
+new file mode 100644
+index 0000000..6408f57
+--- /dev/null
++++ b/packages/integrations-core/src/protocol/observation.ts
+@@ -0,0 +1,61 @@
++/**
++ * Observations — Tier-1 normalized domain facts (SDD §11.4 / §16.4).
++ *
++ * Each carries a minimal universal metadata envelope (provider, connectionId,
++ * tenantId, upstreamEventId, observedAt) plus provider-neutral membership edges.
++ * PII (nick, avatar, flags, communication_disabled_until) is EXCLUDED by
++ * default (INV-8). Provider facts are not identity conclusions (INV-7).
++ */
++import { Schema } from "effect";
++import { Provider } from "./provider.js";
++
++const ObservationMetaFields = {
++  provider: Provider,
++  connectionId: Schema.NonEmptyString,
++  tenantId: Schema.NonEmptyString,
++  upstreamEventId: Schema.NonEmptyString,
++  observedAt: Schema.NonEmptyString,
++};
++
++/** GUILD_MEMBER_ADD → a member is observed in a community with a role set. */
++export class MembershipObserved extends Schema.TaggedClass<MembershipObserved>()(
++  "MembershipObserved",
++  {
++    ...ObservationMetaFields,
++    externalAccountId: Schema.NonEmptyString,
++    communityExternalId: Schema.NonEmptyString,
++    roleExternalIds: Schema.Array(Schema.String),
++  },
++) {}
++
++/** GUILD_MEMBER_UPDATE → the member's current role set changed. */
++export class MembershipChanged extends Schema.TaggedClass<MembershipChanged>()(
++  "MembershipChanged",
++  {
++    ...ObservationMetaFields,
++    externalAccountId: Schema.NonEmptyString,
++    communityExternalId: Schema.NonEmptyString,
++    roleExternalIds: Schema.Array(Schema.String),
++  },
++) {}
++
++/**
++ * GUILD_MEMBER_REMOVE → the member left the community.
++ * LIMITATION: leave vs kick vs ban is NOT distinguishable from the Gateway
++ * REMOVE event (SDD §16.4). No role set on removal.
++ */
++export class MembershipRevoked extends Schema.TaggedClass<MembershipRevoked>()(
++  "MembershipRevoked",
++  {
++    ...ObservationMetaFields,
++    externalAccountId: Schema.NonEmptyString,
++    communityExternalId: Schema.NonEmptyString,
++  },
++) {}
++
++export const Observation = Schema.Union(
++  MembershipObserved,
++  MembershipChanged,
++  MembershipRevoked,
++);
++export type Observation = typeof Observation.Type;
+diff --git a/packages/integrations-core/src/protocol/provider.ts b/packages/integrations-core/src/protocol/provider.ts
+new file mode 100644
+index 0000000..eacd13b
+--- /dev/null
++++ b/packages/integrations-core/src/protocol/provider.ts
+@@ -0,0 +1,11 @@
++/**
++ * Provider — the sealed set of integration providers this building supports.
++ *
++ * Discord is the wave-1 reference vertical; telegram + luma are admitted in the
++ * union (so unknown-provider dispositions are reachable — SDD §16.8) but have no
++ * adapter this wave. Adding a provider is additive.
++ */
++import { Schema } from "effect";
++
++export const Provider = Schema.Literal("discord", "telegram", "luma");
++export type Provider = typeof Provider.Type;
+diff --git a/packages/integrations-core/src/protocol/result.ts b/packages/integrations-core/src/protocol/result.ts
+new file mode 100644
+index 0000000..6483fea
+--- /dev/null
++++ b/packages/integrations-core/src/protocol/result.ts
+@@ -0,0 +1,32 @@
++/**
++ * IngestionResult — what PERSISTENCE did (SDD §11.1 / §16.3 / §16.5).
++ *
++ * `idempotencyKey` is the composite (tenant∷provider∷conn∷id) — NOT the raw
++ * upstreamEventId, which is carried optionally alongside (§16.5). `Conflict` is
++ * a DISTINCT terminal (§16.3): a stored key re-seen with a different digest is
++ * never laundered into a `Committed`.
++ */
++import { Schema } from "effect";
++import { IngestionDisposition } from "./disposition.js";
++
++const Sha256Hex = Schema.String.pipe(Schema.pattern(/^[0-9a-f]{64}$/));
++
++export class Committed extends Schema.TaggedClass<Committed>()("Committed", {
++  idempotencyKey: Schema.NonEmptyString,
++  upstreamEventId: Schema.optional(Schema.String),
++  disposition: IngestionDisposition,
++}) {}
++
++export class Duplicate extends Schema.TaggedClass<Duplicate>()("Duplicate", {
++  idempotencyKey: Schema.NonEmptyString,
++  upstreamEventId: Schema.optional(Schema.String),
++}) {}
++
++export class Conflict extends Schema.TaggedClass<Conflict>()("Conflict", {
++  idempotencyKey: Schema.NonEmptyString,
++  priorDigest: Sha256Hex,
++  newDigest: Sha256Hex,
++}) {}
++
++export const IngestionResult = Schema.Union(Committed, Duplicate, Conflict);
++export type IngestionResult = typeof IngestionResult.Type;
+diff --git a/packages/integrations-core/src/protocol/source.ts b/packages/integrations-core/src/protocol/source.ts
+new file mode 100644
+index 0000000..7999013
+--- /dev/null
++++ b/packages/integrations-core/src/protocol/source.ts
+@@ -0,0 +1,57 @@
++/**
++ * Source manifest + evidence receipt (SDD §8, PRD §11.6, FR-6).
++ *
++ * Published contracts carry source digest, generator version, patch digest,
++ * coverage report, verification evidence, and approval state (INV-5).
++ * Retrieval/generation success is never sufficient publication evidence.
++ */
++import { Schema } from "effect";
++import { Provider } from "./provider.js";
++
++export const SourceClass = Schema.Literal(
++  "openapi",
++  "event-catalog",
++  "docs",
++  "changelog",
++  "source",
++);
++export type SourceClass = typeof SourceClass.Type;
++
++export const AppliedPatch = Schema.Struct({
++  id: Schema.NonEmptyString,
++  owner: Schema.NonEmptyString,
++});
++
++export const SourceManifest = Schema.Struct({
++  provider: Provider,
++  sourceClass: SourceClass,
++  url: Schema.NonEmptyString,
++  ref: Schema.NonEmptyString, // commit / tag / spec filename pin
++  digest: Schema.optional(Schema.String),
++  retrievedAt: Schema.NonEmptyString,
++  generator: Schema.String,
++  generatorVersion: Schema.String,
++  discovered: Schema.Array(Schema.String),
++  patches: Schema.Array(AppliedPatch),
++  validation: Schema.Struct({
++    semanticFocus: Schema.String,
++    sourceDomain: Schema.String,
++  }),
++});
++export type SourceManifest = typeof SourceManifest.Type;
++
++export const EvidenceReceipt = Schema.Struct({
++  provider: Provider,
++  contractVersion: Schema.NonEmptyString,
++  sourceRefs: Schema.Array(Schema.NonEmptyString),
++  generatorVersion: Schema.String,
++  patchSetDigest: Schema.String,
++  coverageRef: Schema.NonEmptyString,
++  staticResults: Schema.String,
++  liveResults: Schema.String, // "tier-2-deferred" this wave
++  testEnv: Schema.String, // "in-memory"
++  productionReadiness: Schema.Literal("non-production", "production"),
++  knownLimitations: Schema.Array(Schema.String),
++  approvalState: Schema.Literal("unpublished", "approved"),
++});
++export type EvidenceReceipt = typeof EvidenceReceipt.Type;
+diff --git a/packages/integrations-core/src/providers/discord.ts b/packages/integrations-core/src/providers/discord.ts
+new file mode 100644
+index 0000000..d83df7c
+--- /dev/null
++++ b/packages/integrations-core/src/providers/discord.ts
+@@ -0,0 +1,171 @@
++/**
++ * Discord adapter — the wave-1 reference vertical (SDD §7 / §11.4).
++ *
++ * Facts verified 2026-07-15 against primary sources:
++ *   - docs.discord.com/developers/topics/gateway-events
++ *   - github.com/discord/discord-api-spec (specs/openapi.json + _preview.json)
++ *
++ * Bounded classification table (the wave-1 admitted surface ONLY — not the whole
++ * Gateway):
++ *   GUILD_MEMBER_ADD    → Projected[MembershipObserved]   (Tier-1)
++ *   GUILD_MEMBER_UPDATE → Projected[MembershipChanged]    (Tier-1)
++ *   GUILD_MEMBER_REMOVE → Projected[MembershipRevoked]    (Tier-1)
++ *   MESSAGE_CREATE      → Ignored{message-content-excluded} (Tier-3)
++ *   any other event     → Quarantined{unclassified-event}
++ *   undecodable payload → AdapterContractError → malformed-payload (in ingest)
++ *
++ * LIMITATION: GUILD_MEMBER_REMOVE cannot distinguish leave vs kick vs ban.
++ * PII (nick, avatar, flags, communication_disabled_until) is EXCLUDED (INV-8).
++ * `upstreamEventId` is the TRANSPORT-assigned delivery id (§17.1) — it is
++ * guaranteed present here because ingest quarantines missing-event-id BEFORE
++ * calling normalize (§16.2).
++ */
++import { Effect, Schema } from "effect";
++import type { RawEventEnvelope } from "../protocol/envelope.js";
++import {
++  Ignored,
++  Projected,
++  Quarantined,
++  type IngestionDisposition,
++} from "../protocol/disposition.js";
++import {
++  MembershipChanged,
++  MembershipObserved,
++  MembershipRevoked,
++} from "../protocol/observation.js";
++import { AdapterContractError } from "../errors.js";
++import { canonicalDigest } from "../identity.js";
++import { AdapterRegistryLayer, type AdapterFn } from "../services.js";
++
++const DiscordUser = Schema.Struct({ id: Schema.NonEmptyString });
++const MemberWithRoles = Schema.Struct({
++  guild_id: Schema.NonEmptyString,
++  user: DiscordUser,
++  roles: Schema.Array(Schema.String),
++});
++const MemberRemoved = Schema.Struct({
++  guild_id: Schema.NonEmptyString,
++  user: DiscordUser,
++});
++
++const decode = <A, I>(schema: Schema.Schema<A, I>, envelope: RawEventEnvelope) =>
++  Schema.decodeUnknown(schema)(envelope.payload).pipe(
++    Effect.mapError(
++      (e) =>
++        new AdapterContractError({
++          provider: "discord",
++          eventType: envelope.eventType,
++          reason: String(e),
++        }),
++    ),
++  );
++
++// upstreamEventId guaranteed present — ingest gates missing-id before normalize.
++const meta = (e: RawEventEnvelope) => ({
++  provider: "discord" as const,
++  connectionId: e.connectionId,
++  tenantId: e.tenantId,
++  upstreamEventId: e.upstreamEventId!,
++  observedAt: e.observedAt,
++});
++
++const account = (userId: string) => `discord:${userId}`;
++const community = (guildId: string) => `discord:guild:${guildId}`;
++const roleId = (r: string) => `discord:role:${r}`;
++
++export const discordAdapter: AdapterFn = (
++  envelope,
++): Effect.Effect<IngestionDisposition, AdapterContractError> => {
++  switch (envelope.eventType) {
++    case "GUILD_MEMBER_ADD":
++      return decode(MemberWithRoles, envelope).pipe(
++        Effect.map(
++          (p) =>
++            new Projected({
++              observations: [
++                new MembershipObserved({
++                  ...meta(envelope),
++                  externalAccountId: account(p.user.id),
++                  communityExternalId: community(p.guild_id),
++                  roleExternalIds: p.roles.map(roleId),
++                }),
++              ],
++            }),
++        ),
++      );
++
++    case "GUILD_MEMBER_UPDATE":
++      return decode(MemberWithRoles, envelope).pipe(
++        Effect.map(
++          (p) =>
++            new Projected({
++              observations: [
++                new MembershipChanged({
++                  ...meta(envelope),
++                  externalAccountId: account(p.user.id),
++                  communityExternalId: community(p.guild_id),
++                  roleExternalIds: p.roles.map(roleId),
++                }),
++              ],
++            }),
++        ),
++      );
++
++    case "GUILD_MEMBER_REMOVE":
++      return decode(MemberRemoved, envelope).pipe(
++        Effect.map(
++          (p) =>
++            new Projected({
++              observations: [
++                new MembershipRevoked({
++                  ...meta(envelope),
++                  externalAccountId: account(p.user.id),
++                  communityExternalId: community(p.guild_id),
++                }),
++              ],
++            }),
++        ),
++      );
++
++    case "MESSAGE_CREATE":
++      // Message content is excluded from the Tier-1 member graph (INV-8).
++      return Effect.succeed(
++        new Ignored({ reason: "message-content-excluded", classification: "tier-3" }),
++      );
++
++    default:
++      return Effect.succeed(
++        new Quarantined({
++          reason: "unclassified-event",
++          patchCandidate: true,
++          payloadDigest: canonicalDigest(envelope.payload),
++          eventType: envelope.eventType,
++        }),
++      );
++  }
++};
++
++/** Provider-keyed registry layer registering ONLY the discord adapter (§16.8). */
++export const DiscordAdapterRegistryLayer = AdapterRegistryLayer({ discord: discordAdapter });
++
++/**
++ * The single classification table (§16.11) — coverage is DERIVED from this, and
++ * a test asserts the adapter switch above agrees with it (no drift). Bounded to
++ * the wave-1 admitted surface; every other event → Quarantined{unclassified-event}.
++ */
++export const DISCORD_CLASSIFICATION: ReadonlyArray<{
++  readonly event: string;
++  readonly tier: "tier-1" | "tier-2" | "tier-3";
++  readonly disposition: "Projected" | "Ignored";
++  readonly reasonCode?: "message-content-excluded";
++}> = [
++  { event: "GUILD_MEMBER_ADD", tier: "tier-1", disposition: "Projected" },
++  { event: "GUILD_MEMBER_UPDATE", tier: "tier-1", disposition: "Projected" },
++  { event: "GUILD_MEMBER_REMOVE", tier: "tier-1", disposition: "Projected" },
++  {
++    event: "MESSAGE_CREATE",
++    tier: "tier-3",
++    disposition: "Ignored",
++    reasonCode: "message-content-excluded",
++  },
++];
+diff --git a/packages/integrations-core/src/services.ts b/packages/integrations-core/src/services.ts
+new file mode 100644
+index 0000000..c17b641
+--- /dev/null
++++ b/packages/integrations-core/src/services.ts
+@@ -0,0 +1,137 @@
++/**
++ * Services — AdapterRegistry (provider-keyed, §16.8) + IngestionStore
++ * (atomic commit/quarantine, §16.3/§17.2). Effect 3.21.2 `Context.Tag` idiom.
++ *
++ * The in-memory store is the wave-1 OBSERVABLE ATOMIC CONTRACT (§16.6): a
++ * production transactional backend must preserve the same properties. It is
++ * first-write-wins (sticky, §16.4): a stored key re-seen with a different digest
++ * is a `conflict`, never an overwrite.
++ */
++import { Context, Effect, Layer, Ref } from "effect";
++import type { RawEventEnvelope } from "./protocol/envelope.js";
++import type { IngestionDisposition, Quarantined } from "./protocol/disposition.js";
++import type { Provider } from "./protocol/provider.js";
++import { AdapterContractError, IngestionStoreError } from "./errors.js";
++
++// ---------------------------------------------------------------------------
++// AdapterRegistry — provider-keyed dispatch (§16.8)
++// ---------------------------------------------------------------------------
++
++export type AdapterFn = (
++  envelope: RawEventEnvelope,
++) => Effect.Effect<IngestionDisposition, AdapterContractError>;
++
++export interface AdapterRegistryShape {
++  /** True iff an adapter is registered for the provider (checked before normalize). */
++  readonly has: (provider: Provider) => boolean;
++  readonly normalize: (
++    envelope: RawEventEnvelope,
++  ) => Effect.Effect<IngestionDisposition, AdapterContractError>;
++}
++
++export class AdapterRegistry extends Context.Tag("integrations/AdapterRegistry")<
++  AdapterRegistry,
++  AdapterRegistryShape
++>() {}
++
++export const makeAdapterRegistry = (
++  adapters: Partial<Record<Provider, AdapterFn>>,
++): AdapterRegistryShape => ({
++  has: (provider) => adapters[provider] !== undefined,
++  normalize: (envelope) => {
++    const fn = adapters[envelope.provider];
++    if (fn === undefined) {
++      // Safety net — the primary unknown-provider path is the `has()` guard in ingest.
++      return Effect.fail(
++        new AdapterContractError({
++          provider: envelope.provider,
++          eventType: envelope.eventType,
++          reason: "no adapter registered for provider",
++        }),
++      );
++    }
++    return fn(envelope);
++  },
++});
++
++export const AdapterRegistryLayer = (
++  adapters: Partial<Record<Provider, AdapterFn>>,
++): Layer.Layer<AdapterRegistry> =>
++  Layer.succeed(AdapterRegistry, makeAdapterRegistry(adapters));
++
++// ---------------------------------------------------------------------------
++// IngestionStore — atomic idempotent commit + quarantine (§16.3/§17.2)
++// ---------------------------------------------------------------------------
++
++export type CommitOutcome =
++  | { readonly _tag: "committed" }
++  | { readonly _tag: "duplicate" }
++  | { readonly _tag: "conflict"; readonly priorDigest: string };
++
++export type QuarantineOutcome = "committed" | "duplicate";
++
++interface StoredRecord {
++  readonly digest: string;
++  readonly disposition: IngestionDisposition;
++}
++
++export interface IngestionStoreShape {
++  /** Atomic idempotent commit keyed by the event idempotency key. */
++  readonly commit: (
++    key: string,
++    digest: string,
++    disposition: IngestionDisposition,
++  ) => Effect.Effect<CommitOutcome, IngestionStoreError>;
++  /** Atomic persist of a quarantine record under its OWN identity (§17.2). */
++  readonly quarantine: (
++    quarantineKey: string,
++    disposition: Quarantined,
++  ) => Effect.Effect<QuarantineOutcome, IngestionStoreError>;
++  /** Inspection accessor — used by tests to prove persisted state (not silently). */
++  readonly getRecord: (
++    key: string,
++  ) => Effect.Effect<StoredRecord | undefined, IngestionStoreError>;
++}
++
++export class IngestionStore extends Context.Tag("integrations/IngestionStore")<
++  IngestionStore,
++  IngestionStoreShape
++>() {}
++
++/**
++ * In-memory store. `Ref.modify` gives linearizable single-op semantics — atomic
++ * duplicate/conflict detection holds under concurrent commits (AC-6). NEVER
++ * fails (`IngestionStoreError` channel is present for the production contract).
++ */
++export const InMemoryIngestionStoreLayer: Layer.Layer<IngestionStore> = Layer.effect(
++  IngestionStore,
++  Effect.gen(function* () {
++    const ref = yield* Ref.make(new Map<string, StoredRecord>());
++
++    const commit: IngestionStoreShape["commit"] = (key, digest, disposition) =>
++      Ref.modify(ref, (map): readonly [CommitOutcome, Map<string, StoredRecord>] => {
++        const existing = map.get(key);
++        if (existing === undefined) {
++          const next = new Map(map);
++          next.set(key, { digest, disposition });
++          return [{ _tag: "committed" }, next];
++        }
++        if (existing.digest === digest) return [{ _tag: "duplicate" }, map];
++        // sticky — do NOT overwrite (§16.4)
++        return [{ _tag: "conflict", priorDigest: existing.digest }, map];
++      });
++
++    const quarantine: IngestionStoreShape["quarantine"] = (quarantineKey, disposition) =>
++      Ref.modify(ref, (map): readonly [QuarantineOutcome, Map<string, StoredRecord>] => {
++        if (map.has(quarantineKey)) return ["duplicate", map];
++        const next = new Map(map);
++        next.set(quarantineKey, { digest: disposition.payloadDigest, disposition });
++        return ["committed", next];
++      });
++
++    const getRecord: IngestionStoreShape["getRecord"] = (key) =>
++      Ref.get(ref).pipe(Effect.map((map) => map.get(key)));
++
++    return { commit, quarantine, getRecord };
++  }),
++);
+diff --git a/packages/integrations-core/src/telemetry.ts b/packages/integrations-core/src/telemetry.ts
+new file mode 100644
+index 0000000..63e8251
+--- /dev/null
++++ b/packages/integrations-core/src/telemetry.ts
+@@ -0,0 +1,28 @@
++/**
++ * Telemetry — span annotation with a strict attribute ALLOWLIST (SDD §11.5 /
++ * §16.11). NEVER payload, user fields, or secrets. Identity is annotated before
++ * normalize; disposition after it is computed (§16.11 ordering).
++ */
++import { Effect } from "effect";
++import type { RawEventEnvelope } from "./protocol/envelope.js";
++
++export const annotateIdentity = (
++  envelope: RawEventEnvelope,
++  idempotencyKey: string | null,
++): Effect.Effect<void> =>
++  Effect.annotateCurrentSpan({
++    provider: envelope.provider,
++    connectionId: envelope.connectionId,
++    tenantId: envelope.tenantId,
++    eventType: envelope.eventType,
++    idempotencyKey: idempotencyKey ?? "(none)",
++  });
++
++export const annotateDisposition = (
++  tag: string,
++  reasonCode?: string,
++): Effect.Effect<void> =>
++  Effect.annotateCurrentSpan({
++    "disposition._tag": tag,
++    ...(reasonCode !== undefined ? { reasonCode } : {}),
++  });
+diff --git a/packages/integrations-core/tests/compat.test.ts b/packages/integrations-core/tests/compat.test.ts
+new file mode 100644
+index 0000000..ea273ff
+--- /dev/null
++++ b/packages/integrations-core/tests/compat.test.ts
+@@ -0,0 +1,39 @@
++/**
++ * Compatibility gate (AC-2 / AC-3, FR-13): @0xhoneyjar/medium-registry — the
++ * presentation-capability domain — must remain source-compatible and unchanged
++ * through this evolution. This test imports it as a downstream consumer would.
++ */
++import { describe, expect, test } from "bun:test";
++import { readFileSync } from "node:fs";
++import { join } from "node:path";
++import { Schema } from "effect";
++import {
++  CLI_DESCRIPTOR,
++  DISCORD_INTERACTION_DESCRIPTOR,
++  DISCORD_WEBHOOK_DESCRIPTOR,
++  hasCapability,
++  MEDIUM_REGISTRY_VERSION,
++  MediumCapability,
++} from "@0xhoneyjar/medium-registry";
++
++describe("@0xhoneyjar/medium-registry compatibility", () => {
++  test("version is unchanged (0.2.0) — additive-only, no breaking bump (AC-3)", () => {
++    const pkg = JSON.parse(
++      readFileSync(join(import.meta.dir, "../../protocol/package.json"), "utf8"),
++    );
++    expect(pkg.version).toBe("0.2.0");
++    expect(MEDIUM_REGISTRY_VERSION).toBe("0.2.0");
++  });
++
++  test("public descriptor singletons + accessor still resolve (AC-2)", () => {
++    expect(DISCORD_WEBHOOK_DESCRIPTOR._tag).toBe("discord-webhook");
++    expect(DISCORD_INTERACTION_DESCRIPTOR._tag).toBe("discord-interaction");
++    expect(CLI_DESCRIPTOR._tag).toBe("cli");
++    expect(typeof hasCapability).toBe("function");
++  });
++
++  test("MediumCapability schema still decodes a descriptor", () => {
++    const decoded = Schema.decodeUnknownSync(MediumCapability)(DISCORD_WEBHOOK_DESCRIPTOR);
++    expect(decoded._tag).toBe("discord-webhook");
++  });
++});
+diff --git a/packages/integrations-core/tests/coverage.test.ts b/packages/integrations-core/tests/coverage.test.ts
+new file mode 100644
+index 0000000..f7c6bd1
+--- /dev/null
++++ b/packages/integrations-core/tests/coverage.test.ts
+@@ -0,0 +1,84 @@
++import { describe, expect, test } from "bun:test";
++import { readFileSync } from "node:fs";
++import { join } from "node:path";
++import { Effect, Schema } from "effect";
++import { CoverageManifest } from "../src/protocol/coverage.js";
++import { EvidenceReceipt, SourceManifest } from "../src/protocol/source.js";
++import { DISCORD_CLASSIFICATION, discordAdapter } from "../src/providers/discord.js";
++import {
++  assertTestsPassed,
++  CoverageBuildError,
++  discordCoverageManifest,
++} from "../src/coverage-build.js";
++import { Ignored, Projected } from "../src/protocol/disposition.js";
++
++const pkg = join(import.meta.dir, "..");
++const read = (rel: string) => JSON.parse(readFileSync(join(pkg, rel), "utf8"));
++
++describe("governance artifacts exist at canonical paths + validate (AC-9, §11.6/§16.11)", () => {
++  test("coverage report decodes against CoverageManifest (semantic validation)", () => {
++    const c = Schema.decodeUnknownSync(CoverageManifest)(read("coverage/discord.coverage.json"));
++    expect(c.provider).toBe("discord");
++    expect(c.dimensions.length).toBe(7);
++  });
++
++  test("every admitted event is classified Tier-1/2/3 with a disposition", () => {
++    const c = Schema.decodeUnknownSync(CoverageManifest)(read("coverage/discord.coverage.json"));
++    for (const entry of DISCORD_CLASSIFICATION) {
++      const found = c.surface.find((s) => s.event === entry.event);
++      expect(found?.tier).toBe(entry.tier);
++    }
++  });
++
++  test("evidence receipt decodes + labels the spine NON-PRODUCTION with limitations (§17.6)", () => {
++    const e = Schema.decodeUnknownSync(EvidenceReceipt)(read("evidence/discord.evidence.json"));
++    expect(e.productionReadiness).toBe("non-production");
++    expect(e.approvalState).toBe("unpublished");
++    expect(e.liveResults).toBe("tier-2-deferred");
++    expect(e.knownLimitations.length).toBeGreaterThan(0);
++  });
++
++  test("REST + Gateway source manifests decode against SourceManifest (FR-6/FR-11)", () => {
++    const rest = Schema.decodeUnknownSync(SourceManifest)(read("source/discord.rest.source.json"));
++    const gw = Schema.decodeUnknownSync(SourceManifest)(read("source/discord.gateway.source.json"));
++    expect(rest.sourceClass).toBe("openapi");
++    expect(gw.sourceClass).toBe("event-catalog");
++  });
++});
++
++describe("fail-closed generation (§16.11)", () => {
++  test("assertTestsPassed(false) throws CoverageBuildError", () => {
++    expect(() => assertTestsPassed(false)).toThrow(CoverageBuildError);
++  });
++  test("assertTestsPassed(true) does not throw", () => {
++    expect(() => assertTestsPassed(true)).not.toThrow();
++  });
++  test("builder validates its own output (fail-closed on schema drift)", () => {
++    expect(() => discordCoverageManifest("2026-07-15T00:00:00Z")).not.toThrow();
++  });
++});
++
++describe("classification table ⇔ adapter agreement (no coverage drift)", () => {
++  const run = <A, E>(e: Effect.Effect<A, E>) => Effect.runPromise(e);
++  const env = (eventType: string, payload: unknown) => ({
++    provider: "discord" as const,
++    connectionId: "c",
++    tenantId: "t",
++    eventType,
++    upstreamEventId: "u",
++    observedAt: "o",
++    receivedAt: "r",
++    sourceContractVersion: "v",
++    payload,
++  });
++  const validPayload = { guild_id: "g", user: { id: "u" }, roles: [] };
++
++  test("each table entry's disposition matches what the adapter actually returns", async () => {
++    for (const entry of DISCORD_CLASSIFICATION) {
++      const payload = entry.event === "MESSAGE_CREATE" ? { content: "x" } : validPayload;
++      const d = await run(discordAdapter(env(entry.event, payload)));
++      if (entry.disposition === "Projected") expect(d).toBeInstanceOf(Projected);
++      if (entry.disposition === "Ignored") expect(d).toBeInstanceOf(Ignored);
++    }
++  });
++});
+diff --git a/packages/integrations-core/tests/durable-store-contract.skip.test.ts b/packages/integrations-core/tests/durable-store-contract.skip.test.ts
+new file mode 100644
+index 0000000..dfbbf19
+--- /dev/null
++++ b/packages/integrations-core/tests/durable-store-contract.skip.test.ts
+@@ -0,0 +1,19 @@
++/**
++ * Durable ingestion-store CONFORMANCE TARGET (§17.6, ADR-durable-ingestion-store).
++ *
++ * These tests are intentionally SKIPPED in wave-1 (the in-memory store is
++ * NON-PRODUCTION). They encode the required production durable semantics as an
++ * executable target: wave-2 un-skips them against the real transactional
++ * backend, and they MUST pass before the spine is labeled `production` in the
++ * evidence receipt. A skipped stub keeps the suite green while making the
++ * deferred contract visible and machine-checkable later.
++ */
++import { describe, test } from "bun:test";
++
++describe.skip("durable IngestionStore contract (wave-2)", () => {
++  test("atomic compare-and-set: idempotency registration + disposition persist in one transaction", () => {});
++  test("crash safety: an accepted disposition survives a simulated crash between operations", () => {});
++  test("cross-process dedup: concurrent commits of one key across processes → exactly one Committed", () => {});
++  test("conflict recovery: a sticky poison-pill conflict can be superseded-with-audit without data loss", () => {});
++  test("quarantine retention: records persist digest+reason only (no raw payload), honoring the retention policy", () => {});
++});
+diff --git a/packages/integrations-core/tests/identity.test.ts b/packages/integrations-core/tests/identity.test.ts
+new file mode 100644
+index 0000000..0335290
+--- /dev/null
++++ b/packages/integrations-core/tests/identity.test.ts
+@@ -0,0 +1,86 @@
++import { describe, expect, test } from "bun:test";
++import { Schema } from "effect";
++import {
++  canonicalDigest,
++  idempotencyKey,
++  quarantineKey,
++  safeDigest,
++  stableStringify,
++} from "../src/identity.js";
++import { RawEventEnvelope } from "../src/protocol/envelope.js";
++
++const decode = Schema.decodeUnknownSync(RawEventEnvelope);
++
++// Base envelope WITHOUT upstreamEventId (add per-test to exercise both branches).
++const base = {
++  provider: "discord",
++  connectionId: "conn-1",
++  tenantId: "tenant-A",
++  eventType: "GUILD_MEMBER_ADD",
++  observedAt: "2026-07-15T00:00:00Z",
++  receivedAt: "2026-07-15T00:00:01Z",
++  sourceContractVersion: "discord@v10",
++  payload: { guild_id: "g", user: { id: "u" }, roles: [] },
++} as const;
++
++describe("idempotencyKey (§16.1/§16.2)", () => {
++  test("includes tenantId → tenant∷provider∷conn∷id", () => {
++    const e = decode({ ...base, upstreamEventId: "evt-1" });
++    expect(idempotencyKey(e)).toBe("tenant-A:discord:conn-1:evt-1");
++  });
++
++  test("two tenants sharing a connectionId produce DISTINCT keys", () => {
++    const a = decode({ ...base, tenantId: "tenant-A", upstreamEventId: "evt-1" });
++    const b = decode({ ...base, tenantId: "tenant-B", upstreamEventId: "evt-1" });
++    expect(idempotencyKey(a)).not.toBe(idempotencyKey(b));
++  });
++
++  test("absent upstreamEventId → null (no content-fallback key)", () => {
++    const e = decode(base);
++    expect(idempotencyKey(e)).toBeNull();
++  });
++});
++
++describe("canonicalDigest (§16.9/§17.8)", () => {
++  test("deterministic + key-order independent", () => {
++    expect(canonicalDigest({ a: 1, b: 2 })).toBe(canonicalDigest({ b: 2, a: 1 }));
++  });
++
++  test("nested key-order independence", () => {
++    expect(canonicalDigest({ x: { p: 1, q: 2 } })).toBe(
++      canonicalDigest({ x: { q: 2, p: 1 } }),
++    );
++  });
++
++  test("distinct payloads → distinct digests", () => {
++    expect(canonicalDigest({ a: 1 })).not.toBe(canonicalDigest({ a: 2 }));
++  });
++
++  test("array order is preserved (not sorted)", () => {
++    expect(canonicalDigest([1, 2])).not.toBe(canonicalDigest([2, 1]));
++  });
++
++  test("emits lowercase sha256 hex", () => {
++    expect(canonicalDigest({ a: 1 })).toMatch(/^[0-9a-f]{64}$/);
++  });
++
++  test("rejects non-serializable input (bigint)", () => {
++    expect(() => canonicalDigest({ x: 1n })).toThrow();
++  });
++});
++
++describe("safeDigest + quarantineKey (§17.2/§17.8)", () => {
++  test("safeDigest never throws on non-serializable input", () => {
++    expect(safeDigest({ x: 1n })).toMatch(/^[0-9a-f]{64}$/);
++  });
++
++  test("quarantine identity is namespaced away from event keys", () => {
++    const k = quarantineKey("discord", "tenant-A", "conn-1", "a".repeat(64));
++    expect(k.startsWith("quarantine:")).toBe(true);
++    expect(k).not.toContain("GUILD_MEMBER_ADD");
++  });
++
++  test("stableStringify sorts keys", () => {
++    expect(stableStringify({ b: 1, a: 2 })).toBe('{"a":2,"b":1}');
++  });
++});
+diff --git a/packages/integrations-core/tests/ingest.discord.test.ts b/packages/integrations-core/tests/ingest.discord.test.ts
+new file mode 100644
+index 0000000..b6ac831
+--- /dev/null
++++ b/packages/integrations-core/tests/ingest.discord.test.ts
+@@ -0,0 +1,113 @@
++import { describe, expect, test } from "bun:test";
++import { Effect, Layer } from "effect";
++import {
++  Committed,
++  DiscordAdapterRegistryLayer,
++  Duplicate,
++  InMemoryIngestionStoreLayer,
++  type IngestionResult,
++  ingestUnknown,
++  MembershipObserved,
++  MembershipRevoked,
++  Projected,
++  Quarantined,
++} from "../src/index.js";
++
++const layer = Layer.merge(InMemoryIngestionStoreLayer, DiscordAdapterRegistryLayer);
++
++const run = (input: unknown) =>
++  Effect.runPromise(ingestUnknown(input).pipe(Effect.provide(layer)));
++const runSeq = (inputs: unknown[]) =>
++  Effect.runPromise(
++    Effect.gen(function* () {
++      const out: IngestionResult[] = [];
++      for (const i of inputs) out.push(yield* ingestUnknown(i));
++      return out;
++    }).pipe(Effect.provide(layer)),
++  );
++
++// deterministic placeholders — NO secrets, NO real user payloads (AC-7)
++const env = (eventType: string, payload: unknown, id = "delivery-1") => ({
++  provider: "discord",
++  connectionId: "conn-test-0001",
++  tenantId: "tenant-test-0001",
++  eventType,
++  upstreamEventId: id, // transport-assigned delivery id (§17.1)
++  observedAt: "2026-07-15T00:00:00Z",
++  receivedAt: "2026-07-15T00:00:01Z",
++  sourceContractVersion: "discord@v10",
++  payload,
++});
++
++const memberAdd = { guild_id: "guild-1", user: { id: "user-1" }, roles: ["role-9"] };
++
++describe("Discord vertical — full disposition matrix (AC-4/AC-5, FR-7/8/9)", () => {
++  test("GUILD_MEMBER_ADD → committed MembershipObserved", async () => {
++    const r = (await run(env("GUILD_MEMBER_ADD", memberAdd))) as Committed;
++    expect(r._tag).toBe("Committed");
++    const obs = (r.disposition as Projected).observations[0] as MembershipObserved;
++    expect(obs._tag).toBe("MembershipObserved");
++    expect(obs.externalAccountId).toBe("discord:user-1");
++    expect(obs.communityExternalId).toBe("discord:guild:guild-1");
++    expect(obs.roleExternalIds).toEqual(["discord:role:role-9"]);
++  });
++
++  test("GUILD_MEMBER_UPDATE → committed MembershipChanged", async () => {
++    const r = (await run(env("GUILD_MEMBER_UPDATE", memberAdd))) as Committed;
++    expect((r.disposition as Projected).observations[0]?._tag).toBe("MembershipChanged");
++  });
++
++  test("GUILD_MEMBER_REMOVE → committed MembershipRevoked (no role set)", async () => {
++    const r = (await run(
++      env("GUILD_MEMBER_REMOVE", { guild_id: "guild-1", user: { id: "user-1" } }),
++    )) as Committed;
++    const obs = (r.disposition as Projected).observations[0] as MembershipRevoked;
++    expect(obs._tag).toBe("MembershipRevoked");
++    expect("roleExternalIds" in obs).toBe(false);
++  });
++
++  test("MESSAGE_CREATE → committed Ignored{message-content-excluded}", async () => {
++    const r = (await run(env("MESSAGE_CREATE", { content: "hi" }))) as Committed;
++    expect(r.disposition._tag).toBe("Ignored");
++    expect((r.disposition as { reason: string }).reason).toBe("message-content-excluded");
++  });
++
++  test("unknown event → committed Quarantined{unclassified-event}", async () => {
++    const r = (await run(env("CHANNEL_PINS_UPDATE", { channel_id: "x" }))) as Committed;
++    const d = r.disposition as Quarantined;
++    expect(d.reason).toBe("unclassified-event");
++    expect(d.patchCandidate).toBe(true);
++  });
++
++  test("malformed GUILD_MEMBER_ADD (missing user) → Quarantined{malformed-payload} — cannot disappear (AC-5)", async () => {
++    const r = (await run(env("GUILD_MEMBER_ADD", { guild_id: "guild-1", roles: [] }))) as Committed;
++    const d = r.disposition as Quarantined;
++    expect(d._tag).toBe("Quarantined");
++    expect(d.reason).toBe("malformed-payload");
++  });
++
++  test("re-delivery of the same event → Duplicate (idempotent)", async () => {
++    const [a, b] = (await runSeq([
++      env("GUILD_MEMBER_ADD", memberAdd),
++      env("GUILD_MEMBER_ADD", memberAdd),
++    ])) as [Committed, Duplicate];
++    expect(a._tag).toBe("Committed");
++    expect(b._tag).toBe("Duplicate");
++  });
++
++  test("observations carry NO PII (no nick/avatar) — INV-8", async () => {
++    const r = (await run(
++      env("GUILD_MEMBER_ADD", {
++        ...memberAdd,
++        nick: "SECRET-NICK",
++        avatar: "SECRET-AVATAR",
++        communication_disabled_until: "2030-01-01",
++      }),
++    )) as Committed;
++    const obs = (r.disposition as Projected).observations[0] as MembershipObserved;
++    const json = JSON.stringify(obs);
++    expect(json).not.toContain("SECRET-NICK");
++    expect(json).not.toContain("SECRET-AVATAR");
++    expect(json).not.toContain("communication_disabled_until");
++  });
++});
+diff --git a/packages/integrations-core/tests/ingest.test.ts b/packages/integrations-core/tests/ingest.test.ts
+new file mode 100644
+index 0000000..c67b4c1
+--- /dev/null
++++ b/packages/integrations-core/tests/ingest.test.ts
+@@ -0,0 +1,180 @@
++import { describe, expect, test } from "bun:test";
++import { Cause, Effect, Exit, Layer } from "effect";
++import * as pkg from "../src/index.js";
++import {
++  AdapterRegistryLayer,
++  type AdapterFn,
++  IngestionStore,
++  InMemoryIngestionStoreLayer,
++  ingestUnknown,
++} from "../src/index.js";
++import { Ignored, Projected } from "../src/protocol/disposition.js";
++import { AdapterContractError, IngestionStoreError } from "../src/errors.js";
++
++// --- stub adapters (the real Discord adapter lands in Sprint 3) -------------
++const stubProject: AdapterFn = () => Effect.succeed(new Projected({ observations: [] }));
++const stubIgnore: AdapterFn = () =>
++  Effect.succeed(new Ignored({ reason: "message-content-excluded", classification: "tier-3" }));
++const stubFail: AdapterFn = (e) =>
++  Effect.fail(
++    new AdapterContractError({ provider: e.provider, eventType: e.eventType, reason: "stub" }),
++  );
++const stubDie: AdapterFn = () => Effect.die(new Error("boom-defect"));
++
++type Adapters = Parameters<typeof AdapterRegistryLayer>[0];
++const layers = (adapters: Adapters, store: Layer.Layer<IngestionStore> = InMemoryIngestionStoreLayer) =>
++  Layer.merge(store, AdapterRegistryLayer(adapters));
++
++const run = (input: unknown, adapters: Adapters = { discord: stubProject }) =>
++  Effect.runPromise(ingestUnknown(input).pipe(Effect.provide(layers(adapters))));
++
++const runSeq = (inputs: unknown[], adapters: Adapters = { discord: stubProject }) =>
++  Effect.runPromise(
++    Effect.gen(function* () {
++      const out = [];
++      for (const i of inputs) out.push(yield* ingestUnknown(i));
++      return out;
++    }).pipe(Effect.provide(layers(adapters))),
++  );
++
++const env = (over: Record<string, unknown> = {}) => ({
++  provider: "discord",
++  connectionId: "c",
++  tenantId: "t",
++  eventType: "GUILD_MEMBER_ADD",
++  upstreamEventId: "e1",
++  observedAt: "o",
++  receivedAt: "r",
++  sourceContractVersion: "v",
++  payload: { ok: true },
++  ...over,
++});
++
++describe("§17.4 single public boundary", () => {
++  test("package exports ingestUnknown but NOT ingestEnvelope", () => {
++    expect(typeof pkg.ingestUnknown).toBe("function");
++    expect("ingestEnvelope" in pkg).toBe(false);
++  });
++});
++
++describe("disposition matrix (§16.1/§16.3)", () => {
++  test("committed → Committed{Projected}", async () => {
++    const r = await run(env());
++    expect(r._tag).toBe("Committed");
++    expect((r as pkg.Committed).disposition._tag).toBe("Projected");
++  });
++
++  test("re-delivery → Duplicate (idempotent)", async () => {
++    const [a, b] = await runSeq([env(), env()]);
++    expect(a._tag).toBe("Committed");
++    expect(b._tag).toBe("Duplicate");
++  });
++
++  test("same key + different payload → Conflict, not Committed (§16.3)", async () => {
++    const [a, b] = await runSeq([
++      env({ payload: { ok: true } }),
++      env({ payload: { ok: false } }), // same upstreamEventId → same key, different digest
++    ]);
++    expect(a._tag).toBe("Committed");
++    expect(b._tag).toBe("Conflict");
++  });
++
++  test("adapter contract failure → Quarantined{malformed-payload}", async () => {
++    const r = await run(env(), { discord: stubFail });
++    expect(r._tag).toBe("Committed");
++    const d = (r as pkg.Committed).disposition as pkg.Quarantined;
++    expect(d._tag).toBe("Quarantined");
++    expect(d.reason).toBe("malformed-payload");
++    expect(d.patchCandidate).toBe(true);
++  });
++
++  test("ignored disposition passes through", async () => {
++    const r = await run(env(), { discord: stubIgnore });
++    expect((r as pkg.Committed).disposition._tag).toBe("Ignored");
++  });
++});
++
++describe("quarantine paths — no silent drops (§16.2/§16.7/§16.8, INV-1)", () => {
++  test("absent upstreamEventId → Quarantined{missing-event-id}", async () => {
++    const { upstreamEventId, ...noId } = env();
++    const r = await run(noId);
++    const d = (r as pkg.Committed).disposition as pkg.Quarantined;
++    expect(d.reason).toBe("missing-event-id");
++  });
++
++  test("rawPayloadHash mismatch → Quarantined{hash-mismatch}", async () => {
++    const r = await run(env({ rawPayloadHash: "a".repeat(64) }));
++    const d = (r as pkg.Committed).disposition as pkg.Quarantined;
++    expect(d.reason).toBe("hash-mismatch");
++  });
++
++  test("unregistered provider → Quarantined{unknown-provider} before normalize", async () => {
++    const r = await run(env({ provider: "telegram" }), { discord: stubProject });
++    const d = (r as pkg.Committed).disposition as pkg.Quarantined;
++    expect(d.reason).toBe("unknown-provider");
++  });
++
++  test("undecodable envelope → durable Quarantined{malformed-envelope}", async () => {
++    const r = await run({ not: "an envelope" });
++    const d = (r as pkg.Committed).disposition as pkg.Quarantined;
++    expect(d._tag).toBe("Quarantined");
++    expect(d.reason).toBe("malformed-envelope");
++    expect((r as pkg.Committed).idempotencyKey.startsWith("quarantine:")).toBe(true);
++  });
++});
++
++describe("failure taxonomy — defects/store-errors surface (§16.3)", () => {
++  test("store commit failure surfaces IngestionStoreError (retryable, not swallowed)", async () => {
++    const failingStore = Layer.succeed(IngestionStore, {
++      commit: () =>
++        Effect.fail(new IngestionStoreError({ operation: "commit", cause: "disk full" })),
++      quarantine: () =>
++        Effect.fail(new IngestionStoreError({ operation: "quarantine", cause: "disk full" })),
++      getRecord: () => Effect.succeed(undefined),
++    });
++    const res = await Effect.runPromise(
++      ingestUnknown(env()).pipe(
++        Effect.either,
++        Effect.provide(Layer.merge(failingStore, AdapterRegistryLayer({ discord: stubProject }))),
++      ),
++    );
++    expect(res._tag).toBe("Left");
++    expect((res as { left: IngestionStoreError }).left._tag).toBe("IngestionStoreError");
++  });
++
++  test("unexpected defect propagates (never laundered into a quarantine)", async () => {
++    const exit = await Effect.runPromiseExit(
++      ingestUnknown(env()).pipe(Effect.provide(layers({ discord: stubDie }))),
++    );
++    expect(Exit.isFailure(exit)).toBe(true);
++    if (Exit.isFailure(exit)) expect(Cause.isDie(exit.cause)).toBe(true);
++  });
++});
++
++describe("atomicity (§16.4, AC-6)", () => {
++  test("N concurrent commits of one key → exactly 1 Committed + (N-1) Duplicate", async () => {
++    const N = 16;
++    const results = await Effect.runPromise(
++      Effect.all(
++        Array.from({ length: N }, () => ingestUnknown(env())),
++        { concurrency: "unbounded" },
++      ).pipe(Effect.provide(layers({ discord: stubProject }))),
++    );
++    const committed = results.filter((r) => r._tag === "Committed").length;
++    const duplicate = results.filter((r) => r._tag === "Duplicate").length;
++    expect(committed).toBe(1);
++    expect(duplicate).toBe(N - 1);
++  });
++
++  test("persisted state is inspectable after commit (IMP-008)", async () => {
++    const record = await Effect.runPromise(
++      Effect.gen(function* () {
++        yield* ingestUnknown(env());
++        const store = yield* IngestionStore;
++        return yield* store.getRecord("t:discord:c:e1");
++      }).pipe(Effect.provide(layers({ discord: stubProject }))),
++    );
++    expect(record).toBeDefined();
++    expect(record?.disposition._tag).toBe("Projected");
++  });
++});
+diff --git a/packages/integrations-core/tests/schema.test.ts b/packages/integrations-core/tests/schema.test.ts
+new file mode 100644
+index 0000000..f3d39e9
+--- /dev/null
++++ b/packages/integrations-core/tests/schema.test.ts
+@@ -0,0 +1,117 @@
++import { describe, expect, test } from "bun:test";
++import { Schema } from "effect";
++import { RawEventEnvelope } from "../src/protocol/envelope.js";
++import {
++  MembershipChanged,
++  MembershipObserved,
++  MembershipRevoked,
++} from "../src/protocol/observation.js";
++import { Ignored, Projected, Quarantined } from "../src/protocol/disposition.js";
++import { Committed, Conflict, Duplicate } from "../src/protocol/result.js";
++
++const decodeEnv = Schema.decodeUnknownSync(RawEventEnvelope);
++const validEnv = {
++  provider: "discord",
++  connectionId: "c",
++  tenantId: "t",
++  eventType: "GUILD_MEMBER_ADD",
++  observedAt: "o",
++  receivedAt: "r",
++  sourceContractVersion: "v",
++  payload: {},
++};
++
++describe("RawEventEnvelope constraints (§16.10)", () => {
++  test("decodes a valid envelope", () => {
++    const e = decodeEnv(validEnv);
++    expect(e.provider).toBe("discord");
++    expect(e.upstreamEventId).toBeUndefined();
++  });
++
++  test("rejects empty connectionId", () => {
++    expect(() => decodeEnv({ ...validEnv, connectionId: "" })).toThrow();
++  });
++
++  test("rejects an unknown provider", () => {
++    expect(() => decodeEnv({ ...validEnv, provider: "slack" })).toThrow();
++  });
++
++  test("rejects a malformed rawPayloadHash", () => {
++    expect(() => decodeEnv({ ...validEnv, rawPayloadHash: "not-a-hash" })).toThrow();
++  });
++});
++
++describe("observations (Tier-1 domain facts)", () => {
++  const meta = {
++    provider: "discord" as const,
++    connectionId: "c",
++    tenantId: "t",
++    upstreamEventId: "u",
++    observedAt: "o",
++    externalAccountId: "discord:1",
++    communityExternalId: "discord:guild:2",
++  };
++
++  test("MembershipObserved carries a role set", () => {
++    const o = new MembershipObserved({ ...meta, roleExternalIds: ["discord:role:9"] });
++    expect(o._tag).toBe("MembershipObserved");
++    expect(o.roleExternalIds).toEqual(["discord:role:9"]);
++  });
++
++  test("MembershipChanged carries the current role set", () => {
++    const o = new MembershipChanged({ ...meta, roleExternalIds: [] });
++    expect(o._tag).toBe("MembershipChanged");
++  });
++
++  test("MembershipRevoked has no role set (leave/kick/ban indistinguishable)", () => {
++    const o = new MembershipRevoked(meta);
++    expect(o._tag).toBe("MembershipRevoked");
++    expect("roleExternalIds" in o).toBe(false);
++  });
++});
++
++describe("dispositions + results", () => {
++  test("Quarantined persists a digest, never the raw payload (§11.5)", () => {
++    const q = new Quarantined({
++      reason: "malformed-payload",
++      patchCandidate: true,
++      payloadDigest: "a".repeat(64),
++      eventType: "GUILD_MEMBER_ADD",
++    });
++    expect(q.payloadDigest).toMatch(/^[0-9a-f]{64}$/);
++    expect("payload" in q).toBe(false);
++  });
++
++  test("Ignored carries a reason code + tier", () => {
++    const i = new Ignored({ reason: "message-content-excluded", classification: "tier-3" });
++    expect(i.classification).toBe("tier-3");
++  });
++
++  test("Projected wraps observations", () => {
++    const p = new Projected({ observations: [] });
++    expect(p._tag).toBe("Projected");
++  });
++
++  test("Conflict is a distinct terminal (§16.3)", () => {
++    const c = new Conflict({
++      idempotencyKey: "k",
++      priorDigest: "a".repeat(64),
++      newDigest: "b".repeat(64),
++    });
++    expect(c._tag).toBe("Conflict");
++  });
++
++  test("Committed carries composite idempotencyKey + optional upstreamEventId (§16.5)", () => {
++    const c = new Committed({
++      idempotencyKey: "t:discord:c:u",
++      upstreamEventId: "u",
++      disposition: new Projected({ observations: [] }),
++    });
++    expect(c.idempotencyKey).toBe("t:discord:c:u");
++  });
++
++  test("Duplicate carries the idempotencyKey", () => {
++    const d = new Duplicate({ idempotencyKey: "t:discord:c:u" });
++    expect(d._tag).toBe("Duplicate");
++  });
++});
+diff --git a/packages/integrations-core/tsconfig.json b/packages/integrations-core/tsconfig.json
+new file mode 100644
+index 0000000..ba01a09
+--- /dev/null
++++ b/packages/integrations-core/tsconfig.json
+@@ -0,0 +1,14 @@
++{
++  "extends": "../protocol/tsconfig.json",
++  "compilerOptions": {
++    "rootDir": "./src",
++    "outDir": "./dist",
++    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
++    "composite": true,
++    "declaration": true,
++    "declarationMap": true,
++    "sourceMap": true
++  },
++  "include": ["src/**/*"],
++  "exclude": ["dist", "node_modules", "tests", "scripts"]
++}

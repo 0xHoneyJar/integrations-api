@@ -1,0 +1,1075 @@
+{
+  "persistence_mode": "standard",
+  "integrity_enforcement": "strict",
+  "drift_resolution": "code",
+  "disabled_agents": [],
+  "goal_traceability": {
+    "enabled": true,
+    "require_goal_ids": true,
+    "auto_assign_ids": true,
+    "generate_appendix_c": true,
+    "generate_e2e_task": true
+  },
+  "goal_validation": {
+    "enabled": true,
+    "block_on_at_risk": false,
+    "block_on_blocked": true,
+    "require_e2e_task": true
+  },
+  "tool_preferences": {
+    "beads_cli": "br",
+    "search_cli": "ck",
+    "deprecated_tools": [
+      "bd",
+      "grep"
+    ]
+  },
+  "paths": {
+    "grimoire": "grimoires/loa",
+    "beads": ".beads"
+  },
+  "memory": {
+    "notes_file": "grimoires/loa/NOTES.md",
+    "trajectory_dir": "grimoires/loa/a2a/trajectory",
+    "trajectory_retention_days": 30,
+    "auto_restore": true,
+    "auto_sync": false,
+    "pretooluse_hook": {
+      "enabled": true,
+      "thinking_chars": 1500,
+      "similarity_threshold": 0.35,
+      "max_memories": 3,
+      "timeout_ms": 500,
+      "tools": [
+        "Read",
+        "Glob",
+        "Grep",
+        "WebFetch",
+        "WebSearch"
+      ]
+    },
+    "vector_db": {
+      "path": ".loa/memory.db",
+      "model": "all-MiniLM-L6-v2",
+      "dimension": 384
+    },
+    "qmd": {
+      "enabled": false,
+      "binary": "qmd",
+      "index_dir": ".loa/qmd",
+      "collections": [
+        {
+          "path": "grimoires/loa",
+          "name": "loa-state",
+          "include": [
+            "*.md"
+          ],
+          "exclude": [
+            "archive/**",
+            "a2a/trajectory/**"
+          ]
+        },
+        {
+          "path": "grimoires/loa/reality",
+          "name": "loa-reality",
+          "include": [
+            "*.md"
+          ]
+        }
+      ]
+    }
+  },
+  "edd": {
+    "enabled": true,
+    "min_test_scenarios": 3,
+    "trajectory_audit": true,
+    "require_citations": true
+  },
+  "compaction": {
+    "enabled": true,
+    "threshold": 5
+  },
+  "integrations": [
+    "github",
+    "linear"
+  ],
+  "drift_detection": {
+    "watch_paths": [
+      ".claude/",
+      "grimoires/loa/"
+    ],
+    "exclude_patterns": [
+      "**/node_modules/**",
+      "**/*.log",
+      "**/.DS_Store",
+      "**/dist/**",
+      "**/build/**",
+      "**/__pycache__/**"
+    ]
+  },
+  "context_filtering": {
+    "enable_filtering": true,
+    "archive_zone": "grimoires/loa/archive/",
+    "signal_threshold": "medium",
+    "default_excludes": [
+      "**/brainstorm-*.md",
+      "**/session-notes-*.md",
+      "**/meeting-*.md",
+      "**/draft-*.md",
+      "**/scratch-*.md",
+      "**/temp-*.md"
+    ],
+    "draft_ttl_days": 30,
+    "respect_frontmatter_signals": true
+  },
+  "grounding": {
+    "threshold": 0.95,
+    "enforcement": "warn",
+    "negative": {
+      "enabled": true,
+      "similarity_threshold": 0.4,
+      "require_diverse_queries": true
+    }
+  },
+  "attention_budget": {
+    "green_threshold": 2000,
+    "yellow_threshold": 5000,
+    "orange_threshold": 7500,
+    "red_threshold": 10000,
+    "advisory_only": true
+  },
+  "session_continuity": {
+    "tiered_recovery": true,
+    "level1_tokens": 100,
+    "level2_tokens": 500,
+    "auto_restore": true
+  },
+  "synthesis_checkpoint": {
+    "enabled": true,
+    "grounding_threshold": 0.95,
+    "edd": {
+      "enabled": true,
+      "min_test_scenarios": 3,
+      "warn_only": true
+    }
+  },
+  "jit_retrieval": {
+    "prefer_ck": true,
+    "fallback_enabled": true,
+    "max_line_range": 100
+  },
+  "registry": {
+    "enabled": true,
+    "default_url": "https://loa-constructs-api.fly.dev/v1",
+    "public_key_cache_hours": 24,
+    "load_on_startup": true,
+    "validate_licenses": false,
+    "offline_grace_hours": 24,
+    "auto_refresh_threshold_hours": 24,
+    "check_updates_on_setup": true,
+    "reserved_skill_names": [
+      "discovering-requirements",
+      "designing-architecture",
+      "planning-sprints",
+      "implementing-tasks",
+      "reviewing-code",
+      "auditing-security",
+      "deploying-infrastructure",
+      "riding-codebase",
+      "mounting-framework",
+      "translating-for-executives"
+    ]
+  },
+  "structured_outputs": {
+    "enabled": true,
+    "validation_mode": "warn",
+    "schema_dir": "schemas",
+    "schemas": {
+      "prd": "prd.schema.json",
+      "sdd": "sdd.schema.json",
+      "sprint": "sprint.schema.json",
+      "trajectory": "trajectory-entry.schema.json"
+    },
+    "auto_validate": true
+  },
+  "extended_thinking": {
+    "enabled": true,
+    "budget_tokens": 16000,
+    "enabled_agents": [
+      "designing-architecture",
+      "reviewing-code",
+      "auditing-security",
+      "planning-sprints"
+    ],
+    "log_thinking": true,
+    "include_summary": true,
+    "step_types": [
+      "analysis",
+      "hypothesis",
+      "evaluation",
+      "decision",
+      "reflection"
+    ]
+  },
+  "trajectory": {
+    "enabled": true,
+    "output_dir": "grimoires/loa/a2a/trajectory",
+    "file_pattern": "{agent}-{date}.jsonl",
+    "include_thinking": true,
+    "grounding": {
+      "required": true,
+      "types": [
+        "citation",
+        "code_reference",
+        "assumption",
+        "user_input",
+        "inference"
+      ],
+      "min_confidence": 0.8
+    },
+    "retention": {
+      "days": 30,
+      "archive": true
+    }
+  },
+  "tool_search": {
+    "enabled": true,
+    "auto_discover": true,
+    "cache_ttl_hours": 24,
+    "include_constructs": true,
+    "default_limit": 10,
+    "ranking": {
+      "name_weight": 100,
+      "description_weight": 50,
+      "scope_weight": 30
+    }
+  },
+  "context_management": {
+    "client_compaction": true,
+    "preserve_notes_md": true,
+    "simplified_checkpoint": true,
+    "auto_trajectory_log": true,
+    "preservation_rules": {
+      "always_preserve": [
+        "notes_session_continuity",
+        "notes_decision_log",
+        "trajectory_entries",
+        "active_beads"
+      ],
+      "compactable": [
+        "tool_results",
+        "thinking_blocks",
+        "verbose_debug",
+        "redundant_file_reads",
+        "intermediate_outputs"
+      ]
+    },
+    "probe_before_load": true,
+    "max_eager_load_lines": 500,
+    "require_relevance_check": true,
+    "relevance_keywords": [
+      "export",
+      "class",
+      "interface",
+      "function",
+      "async",
+      "api",
+      "route",
+      "handler"
+    ],
+    "exclude_patterns": [
+      "*.test.ts",
+      "*.spec.ts",
+      "node_modules/**",
+      "dist/**",
+      "build/**",
+      ".git/**"
+    ],
+    "token_budget": {
+      "small_codebase": 30000,
+      "medium_codebase": 150000,
+      "large_codebase": 500000
+    }
+  },
+  "update_check": {
+    "enabled": true,
+    "cache_ttl_hours": 24,
+    "notification_style": "banner",
+    "include_prereleases": false,
+    "upstream_repo": "0xHoneyJar/loa"
+  },
+  "continuous_learning": {
+    "enabled": true,
+    "auto_extract": true,
+    "require_approval": true,
+    "skills_dir": "grimoires/loa/skills",
+    "pending_dir": "grimoires/loa/skills-pending",
+    "archive_dir": "grimoires/loa/skills-archived",
+    "quality_gates": {
+      "min_discovery_depth": 2,
+      "require_verification": true
+    },
+    "notes_integration": {
+      "check_notes_md": true,
+      "deduplicate": true
+    },
+    "pruning": {
+      "prune_after_days": 90,
+      "prune_min_matches": 2,
+      "auto_prune": false
+    }
+  },
+  "compound_learning": {
+    "enabled": true,
+    "similarity": {
+      "prefer_semantic": true,
+      "ck": {
+        "enabled": "auto",
+        "threshold": 0.7
+      },
+      "memory_stack": {
+        "enabled": "auto",
+        "model": "all-MiniLM-L6-v2",
+        "threshold": 0.35
+      },
+      "qmd": {
+        "enabled": "auto",
+        "search_mode": "hybrid"
+      },
+      "fallback": {
+        "jaccard_threshold": 0.6,
+        "min_keyword_overlap": 3
+      }
+    },
+    "pattern_detection": {
+      "min_occurrences": 2,
+      "max_age_days": 90,
+      "exclude_agents": [],
+      "enabled_types": [
+        "repeated_error",
+        "convergent_solution",
+        "anti_pattern",
+        "project_convention"
+      ]
+    },
+    "quality_gates": {
+      "discovery_depth": {
+        "min_score": 5,
+        "weight": 1
+      },
+      "reusability": {
+        "min_score": 5,
+        "weight": 1
+      },
+      "trigger_clarity": {
+        "min_score": 5,
+        "weight": 1
+      },
+      "verification": {
+        "min_score": 3,
+        "weight": 0.8
+      }
+    },
+    "effectiveness": {
+      "signal_weights": {
+        "task_completed": 3,
+        "no_errors": 2,
+        "no_revert": 2,
+        "faster_completion": 1,
+        "user_positive": 3,
+        "user_negative": -5
+      },
+      "tiers": {
+        "high": 80,
+        "medium": 50,
+        "low": 20
+      },
+      "pruning": {
+        "failures_before_prune": 3,
+        "require_review": true
+      }
+    },
+    "synthesis": {
+      "min_cluster_size": 3,
+      "cluster_similarity_threshold": 0.4,
+      "archive_on_synthesis": false,
+      "require_approval": true
+    },
+    "morning_context": {
+      "enabled": true,
+      "max_learnings": 5,
+      "max_age_days": 30,
+      "min_effectiveness": 50,
+      "max_dismissals": 3,
+      "timeout_ms": 5000
+    },
+    "visualization": {
+      "enabled": true,
+      "format": "mermaid",
+      "output_dir": "grimoires/loa/diagrams/",
+      "include_in_reports": true,
+      "include_preview_urls": true,
+      "color_scheme": {
+        "high_effectiveness": "#10b981",
+        "medium_effectiveness": "#fbbf24",
+        "low_effectiveness": "#f4f4f5",
+        "current_focus": "#3b82f6"
+      }
+    },
+    "archive": {
+      "retention_cycles": 5,
+      "compress": false,
+      "dir": "grimoires/loa/archive/"
+    }
+  },
+  "run_mode": {
+    "enabled": true,
+    "defaults": {
+      "max_cycles": 20,
+      "timeout_hours": 8
+    },
+    "rate_limiting": {
+      "calls_per_hour": 100
+    },
+    "circuit_breaker": {
+      "same_issue_threshold": 3,
+      "no_progress_threshold": 5
+    },
+    "git": {
+      "branch_prefix": "feature/",
+      "create_draft_pr": true
+    },
+    "sprint_plan": {
+      "default_branch_name": "release",
+      "compound_on_complete": true,
+      "compound_auto_approve": false,
+      "compound_fail_action": "warn"
+    }
+  },
+  "recursive_jit": {
+    "cache": {
+      "enabled": true,
+      "max_size_mb": 100,
+      "ttl_days": 30
+    },
+    "condensation": {
+      "default_strategy": "structured_verdict",
+      "max_condensed_tokens": 50,
+      "preserve_fields": [
+        "verdict",
+        "severity_counts",
+        "top_findings"
+      ]
+    },
+    "recovery": {
+      "semantic_enabled": true,
+      "fallback_to_positional": true,
+      "prefer_ck": true
+    },
+    "early_exit": {
+      "enabled": true,
+      "grace_period_seconds": 5
+    },
+    "continuous_synthesis": {
+      "enabled": true,
+      "on_cache_set": true,
+      "on_condense": true,
+      "on_early_exit": true,
+      "target": "notes_decision_log",
+      "update_bead": true
+    }
+  },
+  "gpt_review": {
+    "enabled": true,
+    "timeout_seconds": 300,
+    "max_iterations": 3,
+    "models": {
+      "documents": "gpt-5.5",
+      "code": "gpt-5.5"
+    },
+    "phases": {
+      "prd": true,
+      "sdd": true,
+      "sprint": true,
+      "implementation": true
+    }
+  },
+  "plan_and_analyze": {
+    "codebase_grounding": {
+      "enabled": true,
+      "reality_staleness_days": 7,
+      "ride_timeout_minutes": 20,
+      "skip_on_ride_error": false
+    }
+  },
+  "setup_hook": {
+    "enabled": true,
+    "run_health_check": true
+  },
+  "skill_forking": {
+    "enabled": true,
+    "fork_read_only_skills": true
+  },
+  "hooks": {
+    "check_updates_once": true
+  },
+  "trajectory_session_id": {
+    "enabled": true
+  },
+  "file_read_limits": {
+    "max_output_tokens": 4000
+  },
+  "visual_communication": {
+    "enabled": true,
+    "service": "https://agents.craft.do/mermaid",
+    "theme": "github",
+    "include_preview_urls": true,
+    "diagram_types": {
+      "flowchart": true,
+      "sequence": true,
+      "class": true,
+      "state": true,
+      "er": true
+    }
+  },
+  "oracle": {
+    "weights": {
+      "loa": 1,
+      "anthropic": 0.8,
+      "community": 0.5
+    },
+    "loa_sources": {
+      "skills": {
+        "enabled": true,
+        "paths": [
+          ".claude/skills/**/*.md"
+        ]
+      },
+      "feedback": {
+        "enabled": true,
+        "paths": [
+          "grimoires/loa/feedback/*.yaml"
+        ]
+      },
+      "decisions": {
+        "enabled": true,
+        "paths": [
+          "grimoires/loa/decisions.yaml"
+        ]
+      },
+      "learnings": {
+        "enabled": true,
+        "paths": [
+          "grimoires/loa/a2a/compound/learnings.json"
+        ]
+      }
+    },
+    "index": {
+      "auto_refresh_hours": 24,
+      "cache_dir": "~/.loa/cache/oracle"
+    },
+    "query": {
+      "default_indexer": "auto",
+      "default_limit": 10,
+      "default_scope": "all"
+    }
+  },
+  "learnings": {
+    "tiers": {
+      "framework": {
+        "enabled": true,
+        "weight": 1,
+        "source_dir": ".claude/loa/learnings"
+      },
+      "project": {
+        "enabled": true,
+        "weight": 0.9,
+        "sources": [
+          "grimoires/loa/a2a/compound/learnings.json",
+          "grimoires/loa/feedback/*.yaml"
+        ]
+      }
+    },
+    "query": {
+      "default_tier": "all",
+      "max_results": 10,
+      "deduplicate": true
+    },
+    "index": {
+      "rebuild_on_update": true,
+      "cache_dir": "~/.loa/cache/oracle/loa"
+    }
+  },
+  "upstream_detection": {
+    "enabled": true,
+    "min_occurrences": 3,
+    "min_success_rate": 0.8,
+    "min_upstream_score": 70,
+    "novelty_threshold": 0.7,
+    "check_days": 1,
+    "silent": true
+  },
+  "upstream_proposals": {
+    "target_repo": "0xHoneyJar/loa",
+    "label": "learning-proposal",
+    "anonymization": {
+      "enabled": true,
+      "validate": true,
+      "strict": false
+    },
+    "rejection_cooldown_days": 90,
+    "auto_check_status": false
+  },
+  "autonomous_agent": {
+    "operator": {
+      "type": "auto",
+      "ai_config": {
+        "enforce_autonomous_skill": true,
+        "strict_quality_gates": true,
+        "require_audit_before_pr": true,
+        "require_audit_before_deploy": true
+      }
+    },
+    "audit_threshold": 4,
+    "max_remediation_loops": 3,
+    "require_human_deploy_approval": true,
+    "attention_budget": {
+      "single_search": 2000,
+      "accumulated": 5000,
+      "session_total": 15000
+    },
+    "context": {
+      "soft_limit_tokens": 80000,
+      "hard_limit_tokens": 150000,
+      "checkpoint_after_each_phase": true
+    },
+    "feedback": {
+      "enabled": true,
+      "output_dir": "grimoires/loa/feedback",
+      "auto_flush": true,
+      "min_severity": "low",
+      "collect_types": [
+        "gap",
+        "friction",
+        "pattern",
+        "improvement"
+      ]
+    },
+    "prd_iteration": {
+      "enabled": true,
+      "gaps_file": "grimoires/loa/gaps.yaml",
+      "minor_gap_threshold": 3,
+      "auto_recommend_refine": true,
+      "block_on_major_gaps": true
+    },
+    "structured_notes": {
+      "enabled": true,
+      "notes_file": "grimoires/loa/NOTES.md",
+      "expiry": {
+        "synthesis": 7,
+        "observation": 14,
+        "decision": null,
+        "blocker": null,
+        "question": 14
+      },
+      "auto_cleanup": false,
+      "archive_dir": "grimoires/loa/archive/notes/"
+    }
+  },
+  "feedback": {
+    "routing": {
+      "enabled": true,
+      "auto_classify": true,
+      "require_confirmation": true,
+      "cross_reference": false
+    },
+    "repos": {
+      "framework": "0xHoneyJar/loa",
+      "constructs": "0xHoneyJar/loa-constructs",
+      "forge": "0xHoneyJar/forge",
+      "project": "${GITHUB_REPOSITORY}"
+    },
+    "labels": {
+      "graceful_missing": true,
+      "default": [
+        "feedback",
+        "user-report"
+      ]
+    }
+  },
+  "update_loa": {
+    "branch_testing": {
+      "enabled": true,
+      "feature_patterns": [
+        "feature/*",
+        "fix/*",
+        "topic/*",
+        "wip/*",
+        "test/*"
+      ],
+      "test_branch_prefix": "test/loa-",
+      "state_file": ".loa/branch-testing.json"
+    }
+  },
+  "effort": {
+    "default_level": "medium",
+    "budget_ranges": {
+      "low": {
+        "min": 1024,
+        "max": 4000
+      },
+      "medium": {
+        "min": 8000,
+        "max": 16000
+      },
+      "high": {
+        "min": 24000,
+        "max": 32000
+      }
+    },
+    "per_skill": {
+      "auditing-security": "high",
+      "designing-architecture": "high",
+      "reviewing-code": "medium",
+      "implementing-tasks": "medium",
+      "planning-sprints": "medium",
+      "discovering-requirements": "medium",
+      "translating-for-executives": "low"
+    },
+    "ai_operator_adjustment": {
+      "enabled": true,
+      "reduction": 0
+    }
+  },
+  "context_editing": {
+    "enabled": true,
+    "compact_threshold_percent": 80,
+    "preserve_recent_turns": 5,
+    "clear_targets": [
+      "stale_tool_results",
+      "completed_phase_details",
+      "superseded_file_reads",
+      "intermediate_outputs",
+      "verbose_debug"
+    ],
+    "clear_after_phases": [
+      "initialization",
+      "implementation",
+      "testing"
+    ],
+    "preserve_artifacts": [
+      "trajectory_events",
+      "quality_gate_results",
+      "decision_records",
+      "notes_session_continuity",
+      "active_beads"
+    ],
+    "runtime_signals": {
+      "context_near_limit": "CONTEXT_NEAR_LIMIT",
+      "compaction_complete": "COMPACTION_COMPLETE",
+      "signal_threshold_percent": 80
+    }
+  },
+  "skills": {
+    "defer_loading": false,
+    "always_load": [
+      "autonomous-agent",
+      "run-mode"
+    ],
+    "categories": {
+      "planning": [
+        "discovering-requirements",
+        "planning-sprints",
+        "designing-architecture"
+      ],
+      "implementation": [
+        "implementing-tasks",
+        "deploying-infrastructure"
+      ],
+      "quality": [
+        "reviewing-code",
+        "auditing-security"
+      ],
+      "support": [
+        "translating-for-executives",
+        "continuous-learning"
+      ],
+      "operations": [
+        "autonomous-agent",
+        "run-mode",
+        "riding-codebase",
+        "mounting-framework"
+      ]
+    }
+  },
+  "memory_schema": {
+    "enabled": true,
+    "storage_dir": "grimoires/loa/memory",
+    "categories": {
+      "fact": {
+        "ttl": "permanent",
+        "confidence_required": 0.8,
+        "storage_file": "facts.yaml"
+      },
+      "decision": {
+        "ttl": "permanent",
+        "confidence_required": 0.9,
+        "storage_file": "decisions.yaml"
+      },
+      "learning": {
+        "ttl": "90d",
+        "confidence_required": 0.7,
+        "storage_file": "learnings.yaml"
+      },
+      "error": {
+        "ttl": "30d",
+        "confidence_required": 0.6,
+        "storage_file": "errors.yaml"
+      },
+      "preference": {
+        "ttl": "permanent",
+        "confidence_required": 0.5,
+        "storage_file": "preferences.yaml"
+      }
+    },
+    "auto_capture": {
+      "decisions": true,
+      "errors": true,
+      "learnings": true
+    },
+    "retrieval": {
+      "max_per_query": 10,
+      "min_confidence": 0.6,
+      "recency_weight": 0.2,
+      "integrate_with_oracle": true
+    },
+    "lifecycle": {
+      "auto_archive": true,
+      "archive_dir": "grimoires/loa/memory/archive",
+      "check_on_session_start": true,
+      "warn_before_archive_days": 7
+    }
+  },
+  "prompt_enhancement": {
+    "enabled": true,
+    "auto_enhance_threshold": 4,
+    "show_analysis": true,
+    "max_refinement_iterations": 3,
+    "enabled_task_types": [],
+    "middleware": {
+      "enabled": false,
+      "exclude_skills": [
+        "enhancing-prompts",
+        "run-mode"
+      ]
+    }
+  },
+  "flatline_protocol": {
+    "code_review": {
+      "enabled": true,
+      "model": "codex-headless",
+      "budget_cents": 150,
+      "timeout_seconds": 120
+    },
+    "enabled": true,
+    "auto_trigger": true,
+    "models": {
+      "primary": "codex-headless",
+      "secondary": "cursor-headless",
+      "tertiary": "grok-headless"
+    },
+    "thresholds": {
+      "high_consensus": 700,
+      "dispute_delta": 300,
+      "low_value": 400,
+      "blocker": 700
+    },
+    "phases": {
+      "prd": true,
+      "sdd": true,
+      "sprint": true
+    },
+    "budget": {
+      "max_tokens_per_phase": 100000,
+      "warn_at_percent": 80,
+      "hard_limit_cents": 300,
+      "block_on_exceed": false
+    },
+    "knowledge": {
+      "local": {
+        "enabled": true,
+        "sources": [
+          ".claude/loa/learnings/",
+          "grimoires/loa/context/",
+          "grimoires/loa/a2a/compound/"
+        ]
+      },
+      "notebooklm": {
+        "enabled": false,
+        "notebook_id": "ac1d0292-5165-4495-ad0e-2df58e73bf57",
+        "timeout_ms": 30000,
+        "headless": true
+      }
+    }
+  },
+  "run_bridge": {
+    "enabled": true,
+    "defaults": {
+      "depth": 3,
+      "per_sprint": false,
+      "flatline_threshold": 0.05,
+      "consecutive_flatline": 2
+    },
+    "timeouts": {
+      "per_iteration_hours": 4,
+      "total_hours": 24
+    },
+    "github_trail": {
+      "post_comments": true,
+      "update_pr_body": true
+    },
+    "ground_truth": {
+      "enabled": true
+    },
+    "vision_registry": {
+      "enabled": true,
+      "auto_capture": true
+    },
+    "rtfm": {
+      "enabled": true,
+      "max_fix_iterations": 1
+    },
+    "lore": {
+      "enabled": true,
+      "categories": [
+        "mibera",
+        "neuromancer"
+      ]
+    }
+  },
+  "spiral": {
+    "enabled": true,
+    "default_max_cycles": 3,
+    "budget_cents": 8000,
+    "wall_clock_seconds": 28800,
+    "max_budget_per_cycle_usd": 35,
+    "max_total_budget_usd": 80,
+    "flatline": {
+      "min_new_findings_per_cycle": 3,
+      "consecutive_low_cycles": 2
+    },
+    "seed": {
+      "mode": "degraded"
+    },
+    "harness": {
+      "executor_model": "sonnet",
+      "advisor_model": "opus",
+      "max_phase_retries": 3,
+      "planning_budget_usd": 2,
+      "implement_budget_usd": 12,
+      "review_budget_usd": 3,
+      "audit_budget_usd": 3,
+      "bb_fix_budget_usd": 3,
+      "bb_max_iterations": 3,
+      "discovery_timeout_sec": 1200,
+      "architecture_timeout_sec": 1200,
+      "planning_timeout_sec": 900,
+      "pipeline_profile": "standard"
+    },
+    "step_timeouts": {
+      "simstim_sec": 7200
+    }
+  },
+  "agent_teams": {
+    "enabled": true
+  },
+  "preferences": {
+    "auto_bead_on_review": true,
+    "require_security_audit": true,
+    "confirm_app_writes": true
+  },
+  "bridgebuilder": {
+    "enabled": true,
+    "model": "claude-headless"
+  },
+  "simstim": {
+    "enabled": true
+  },
+  "post_pr_validation": {
+    "phases": {
+      "bridgebuilder_review": {
+        "enabled": true
+      }
+    }
+  },
+  "hounfour": {
+    "providers": {
+      "openai": {
+        "models": {
+          "gpt-5.6-sol": {
+            "auth_type": "headless",
+            "dispatch_group": "openai-gpt",
+            "kind": "cli",
+            "capabilities": [
+              "chat",
+              "code"
+            ],
+            "context_window": 1000000,
+            "extra": {
+              "cli_model": "gpt-5.6-sol"
+            }
+          },
+          "codex-headless": {
+            "context_window": 1000000,
+            "extra": {
+              "cli_model": "gpt-5.6-sol"
+            }
+          }
+        }
+      },
+      "cursor": {
+        "models": {
+          "gpt-5.6-sol": {
+            "auth_type": "headless",
+            "dispatch_group": "cursor-agent",
+            "kind": "cli",
+            "capabilities": [
+              "chat",
+              "code"
+            ],
+            "context_window": 1000000,
+            "extra": {
+              "cli_model": "gpt-5.6-sol-high"
+            }
+          },
+          "grok-4.5": {
+            "auth_type": "headless",
+            "dispatch_group": "cursor-agent",
+            "kind": "cli",
+            "capabilities": [
+              "chat",
+              "code"
+            ],
+            "context_window": 256000,
+            "extra": {
+              "cli_model": "grok-4.5-xhigh"
+            }
+          }
+        }
+      },
+      "xai": {
+        "models": {
+          "grok-build": {
+            "extra": {
+              "cli_model": "grok-4.5"
+            }
+          }
+        }
+      }
+    },
+    "aliases": {
+      "gpt-5.6-sol": "openai:gpt-5.6-sol",
+      "grok-4.5": "cursor:grok-4.5"
+    }
+  }
+}

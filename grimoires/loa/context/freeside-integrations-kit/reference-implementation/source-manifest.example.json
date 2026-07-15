@@ -1,0 +1,36 @@
+{
+  "provider": "discord",
+  "contract_version": "0.1.0-candidate",
+  "sources": [
+    {
+      "kind": "openapi",
+      "url": "https://github.com/discord/discord-api-spec",
+      "ref": "PIN_BEFORE_GENERATION",
+      "digest": "SHA256_REQUIRED"
+    },
+    {
+      "kind": "gateway-docs",
+      "url": "https://docs.discord.com/developers/events/gateway-events",
+      "ref": "CAPTURED_AT_REQUIRED",
+      "digest": "SHA256_REQUIRED"
+    }
+  ],
+  "generator": {
+    "name": "distilled-compatible-foundry",
+    "version": "PIN_REQUIRED",
+    "patch_digest": "SHA256_REQUIRED"
+  },
+  "coverage": {
+    "discovered": 0,
+    "tier_1": 0,
+    "tier_2": 0,
+    "tier_3": 0,
+    "unclassified": 0
+  },
+  "verification": {
+    "static": "pending",
+    "live": "pending",
+    "semantic_focus": "pending",
+    "approved": false
+  }
+}
