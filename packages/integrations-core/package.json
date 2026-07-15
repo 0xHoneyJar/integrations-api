@@ -46,6 +46,7 @@
     "effect": ">=3.21.2 <4"
   },
   "devDependencies": {
+    "@0xhoneyjar/medium-registry": "workspace:*",
     "@types/bun": "latest",
     "effect": ">=3.21.2 <4",
     "typescript": "^5.7.0"

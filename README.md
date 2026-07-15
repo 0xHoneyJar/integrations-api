@@ -6,6 +6,21 @@ The L2 boundary layer between L1 character config and L3 cmp-boundary transforms
 
 > *What can THIS chat medium render?*
 
+## Evolving into the Freeside integrations building (2026-07-15)
+
+Per operator ratification, this building is **evolving** from a presentation-only medium
+registry into the Freeside **integrations** building — federation slug **`integrations-api`**
+(the `mediums-api` slug remains a valid alias during migration). The question broadens from
+*"what can this medium render?"* to *"how does provider behavior (Discord, Telegram, Luma)
+enter Freeside through a versioned, evidence-backed contract, with every event durably
+dispositioned?"*
+
+`@0xhoneyjar/medium-registry` is **unchanged** and remains the **presentation-capability**
+domain + compatibility surface. The new, additive `@0xhoneyjar/integrations-core` holds the
+integrations core (Discord reference vertical this wave — NON-PRODUCTION, in-memory).
+Design + governance: `grimoires/loa/{prd,sdd,sprint}.md`; continuation:
+`grimoires/loa/context/integrations-continuation-plan.md`.
+
 ## Why this exists
 
 Per `~/vault/wiki/concepts/chat-medium-presentation-boundary.md` doctrine: persona-bot output crosses a translation boundary between substrate truth (IDs, internal state) and chat-medium presentation (rendered surfaces). Each medium has a different rendering surface — Discord renders stickers + custom emoji + slash commands + modals; Telegram renders inline keyboards + sticker sets; CLI renders plain text + ANSI escapes.
@@ -22,6 +37,7 @@ Without a shared registry, every renderer hardcodes its medium's assumptions. Th
 |---------|--------|---------|
 | `@0xhoneyjar/medium-registry` (`packages/protocol`) | **0.2.0 sprint-3** (cycle R) | Sealed Effect Schema · MediumCapability discriminated union · Discord webhook + interaction (split per SKP-001) · CLI minimal · Telegram stub |
 | `@0xhoneyjar/cli-renderer` (`packages/cli-renderer`) | **0.1.0 sprint-3** (cycle R) | ANSI text renderer · second-medium proof · ANSI injection guard |
+| `@0xhoneyjar/integrations-core` (`packages/integrations-core`) | **0.1.0 wave-1** (integrations-api · NON-PRODUCTION) | Provider-behavior contracts + in-memory ingestion harness + Discord reference vertical · every event durably dispositioned (zero silent drops) |
 
 ### v0.2.0 highlight: Discord context split
 
