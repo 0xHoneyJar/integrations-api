@@ -106,6 +106,20 @@ export class IngestionStore extends Context.Tag("integrations/IngestionStore")<
 export const InMemoryIngestionStoreLayer: Layer.Layer<IngestionStore> = Layer.effect(
   IngestionStore,
   Effect.gen(function* () {
+    // §17.6 NON-PRODUCTION guard — this in-memory store is a reference, not for
+    // live use. Fail fast in production so a consumer can't silently wire it into
+    // a live path; override with INTEGRATIONS_ALLOW_INMEMORY=1 for tests/sandboxes.
+    if (
+      process.env.NODE_ENV === "production" &&
+      process.env.INTEGRATIONS_ALLOW_INMEMORY !== "1"
+    ) {
+      return yield* Effect.die(
+        new Error(
+          "InMemoryIngestionStoreLayer is NON-PRODUCTION (§17.6): provide a durable " +
+            "IngestionStore in production, or set INTEGRATIONS_ALLOW_INMEMORY=1 to override.",
+        ),
+      );
+    }
     const ref = yield* Ref.make(new Map<string, StoredRecord>());
 
     const commit: IngestionStoreShape["commit"] = (key, digest, disposition) =>

@@ -59,19 +59,51 @@ export const idempotencyKey = (envelope: RawEventEnvelope): string | null => {
 };
 
 /**
+ * Type-tagged, cycle-aware serialization used ONLY as the non-serializable
+ * fallback for `safeDigest`. Unlike `String(input)` (which collapses every
+ * object to "[object Object]"), this captures structure + value types so
+ * distinct non-serializable inputs produce distinct strings.
+ */
+const typeTaggedString = (value: unknown): string => {
+  const seen = new WeakSet<object>();
+  const walk = (v: unknown): string => {
+    if (v === null) return "null";
+    const t = typeof v;
+    if (t === "bigint") return `bigint:${(v as bigint).toString()}`;
+    if (t === "function") return `function:${(v as { name?: string }).name ?? "anon"}`;
+    if (t === "symbol") return `symbol:${String(v)}`;
+    if (t === "undefined") return "undefined";
+    if (t !== "object") return `${t}:${JSON.stringify(v)}`;
+    const obj = v as object;
+    if (seen.has(obj)) return "[circular]";
+    seen.add(obj);
+    if (Array.isArray(obj)) return `[${obj.map(walk).join(",")}]`;
+    const rec = obj as Record<string, unknown>;
+    return `{${Object.keys(rec)
+      .sort()
+      .map((k) => `${k}:${walk(rec[k])}`)
+      .join(",")}}`;
+  };
+  return walk(value);
+};
+
+/**
  * Length-capped digest that NEVER throws — used for quarantine records of
- * malformed/non-serializable inputs (§17.8). Falls back to a best-effort string
- * form when canonicalization fails.
+ * malformed/non-serializable inputs (§17.8). Binds the ORIGINAL length into the
+ * hash so distinct oversized inputs sharing a truncated prefix do not collide,
+ * and uses a type-tagged fallback so non-serializable objects do not collapse
+ * to a single "[object Object]" identity.
  */
 export const safeDigest = (input: unknown): string => {
   let s: string;
   try {
     s = stableStringify(input);
   } catch {
-    s = typeof input === "string" ? input : String(input);
+    s = typeof input === "string" ? input : typeTaggedString(input);
   }
+  const originalLength = s.length;
   if (s.length > MAX_SAFE_INPUT_BYTES) s = s.slice(0, MAX_SAFE_INPUT_BYTES);
-  return sha256Hex(s);
+  return sha256Hex(`${originalLength}:${s}`);
 };
 
 /**

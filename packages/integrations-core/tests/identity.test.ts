@@ -74,6 +74,18 @@ describe("safeDigest + quarantineKey (§17.2/§17.8)", () => {
     expect(safeDigest({ x: 1n })).toMatch(/^[0-9a-f]{64}$/);
   });
 
+  test("distinct non-serializable inputs → distinct digests (no [object Object] collision)", () => {
+    // both are non-serializable (bigint) but structurally different
+    expect(safeDigest({ a: 1n })).not.toBe(safeDigest({ b: 1n }));
+    expect(safeDigest({ a: 1n })).not.toBe(safeDigest({ a: 2n }));
+  });
+
+  test("safeDigest handles circular references without throwing", () => {
+    const circular: Record<string, unknown> = { a: 1 };
+    circular.self = circular;
+    expect(safeDigest(circular)).toMatch(/^[0-9a-f]{64}$/);
+  });
+
   test("quarantine identity is namespaced away from event keys", () => {
     const k = quarantineKey("discord", "tenant-A", "conn-1", "a".repeat(64));
     expect(k.startsWith("quarantine:")).toBe(true);

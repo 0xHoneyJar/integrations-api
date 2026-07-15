@@ -1,0 +1,1 @@
+{"gate":"flatline:pr","verdict_band":"DEGRADED","degradation_reason":"RetriesExhausted","sprint_id":"pr","ts":"2026-07-15T19:50:58Z","model_exit_code":1,"degraded_legs":["grok-build"]}

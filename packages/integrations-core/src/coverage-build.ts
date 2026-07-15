@@ -29,6 +29,8 @@ export const KNOWN_LIMITATIONS: ReadonlyArray<string> = [
   "No transport this wave: Gateway/webhook receipt, resume/sequence-gap replay, and Ed25519 signature verification are Tier-2 (§17.7).",
   "GUILD_MEMBER_REMOVE cannot distinguish leave vs kick vs ban.",
   "upstreamEventId is transport-assigned; durable Discord identity from Gateway session/sequence is Tier-2 (§17.1).",
+  "Evidence generation uses a wave-1 self-attested --tests-passed flag; wave-2 must bind the receipt to a CI test-artifact digest + commit SHA (flatline code-review 720/730).",
+  "Identical malformed inputs collapse into one quarantine record (idempotent by design); per-delivery occurrence counts/timestamps are deferred (flatline code-review 760).",
 ];
 
 /** Build + validate the Discord coverage manifest (fail-closed on schema drift). */
