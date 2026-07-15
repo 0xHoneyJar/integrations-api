@@ -1,0 +1,17 @@
+{
+  "name": "freeside-integrations-reference",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "effect": "beta"
+  },
+  "devDependencies": {
+    "@effect/vitest": "beta",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}

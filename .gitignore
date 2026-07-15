@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+.repos/effect
+.claude.backup.*
 bun.lockb
 *.tsbuildinfo
 

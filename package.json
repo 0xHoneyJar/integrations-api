@@ -14,9 +14,10 @@
     "packages/discord-renderer"
   ],
   "scripts": {
+    "prepare": "./scripts/prepare-effect.sh",
     "build": "bun run --filter '*' build",
     "typecheck": "bun run --filter '*' typecheck",
-    "test": "bun test",
+    "test": "bun test packages",
     "acvp:verify": "bun scripts/acvp-verify.ts",
     "clean": "bun run --filter '*' clean"
   },

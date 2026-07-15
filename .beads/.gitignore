@@ -6,6 +6,7 @@
 
 # Lock files
 *.lock
+.write.lock
 
 # Temporary
 last-touched
@@ -23,6 +24,7 @@ last-touched
 # Sync state (local-only, per-machine)
 .sync.lock
 sync_base.jsonl
+.jsonl-verified-current
 
 # Merge artifacts (temporary files from 3-way merge)
 beads.base.jsonl
