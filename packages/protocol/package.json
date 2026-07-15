@@ -29,12 +29,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/0xHoneyJar/freeside-mediums.git",
+    "url": "https://github.com/0xHoneyJar/integrations-api.git",
     "directory": "packages/protocol"
   },
-  "homepage": "https://github.com/0xHoneyJar/freeside-mediums/tree/main/packages/protocol#readme",
+  "homepage": "https://github.com/0xHoneyJar/integrations-api/tree/main/packages/protocol#readme",
   "bugs": {
-    "url": "https://github.com/0xHoneyJar/freeside-mediums/issues"
+    "url": "https://github.com/0xHoneyJar/integrations-api/issues"
   },
   "keywords": [
     "freeside",

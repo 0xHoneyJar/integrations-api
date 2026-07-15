@@ -8,12 +8,12 @@ The first vertical is Discord membership ingestion. It proves one invariant: eve
 
 ## What changed
 
-This repository is evolving from `freeside-mediums` / federation slug `mediums-api` into the `integrations-api` building. The transition is additive:
+This repository was renamed from `freeside-mediums` / `mediums-api` to `integrations-api`. The transition remains additive:
 
 - `@0xhoneyjar/integrations-core` is the new provider-ingestion and governance core.
 - `@0xhoneyjar/medium-registry`, `@0xhoneyjar/cli-renderer`, and `@0xhoneyjar/discord-renderer` remain compatible presentation surfaces.
 - The local BeaconV3 identity is now `integrations-api`.
-- The GitHub repository rename and the `loa-freeside` registry migration remain separate cross-repository ratification work; this branch does not claim they are complete.
+- The GitHub repository rename is complete. The `loa-freeside` registry migration remains separate cross-repository ratification work tracked in [loa-freeside#469](https://github.com/0xHoneyJar/loa-freeside/issues/469).
 
 ## Architecture
 
