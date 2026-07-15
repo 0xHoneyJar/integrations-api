@@ -42,3 +42,6 @@ export type {
   QuarantineOutcome,
 } from "./services.js";
 export { annotateDisposition, annotateIdentity } from "./telemetry.js";
+
+// Discord reference vertical (§7 / §11.4)
+export { discordAdapter, DiscordAdapterRegistryLayer } from "./providers/discord.js";
