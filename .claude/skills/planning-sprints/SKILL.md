@@ -1,4 +1,19 @@
 ---
+name: sprint-plan
+description: Create comprehensive sprint plan based on PRD and SDD
+role: planning
+capabilities:
+  schema_version: 1
+  read_files: true
+  search_code: true
+  write_files: true
+  execute_commands: false
+  web_access: false
+  user_interaction: true
+  agent_spawn: false
+  task_management: false
+cost-profile: moderate
+context: fork
 parallel_threshold: null
 timeout_minutes: 60
 zones:
@@ -16,7 +31,7 @@ zones:
 # Sprint Planner
 
 <objective>
-Transform PRD and SDD into actionable sprint plan with 2.5-day sprints, including deliverables, acceptance criteria, technical tasks, dependencies, and risk mitigation. Generate `grimoires/loa/sprint.md`.
+Transform PRD and SDD into actionable sprint plan with right-sized sprints, including deliverables, acceptance criteria, technical tasks, dependencies, and risk mitigation. Generate `grimoires/loa/sprint.md`.
 </objective>
 
 <zone_constraints>
@@ -31,6 +46,8 @@ This skill operates under **Managed Scaffolding**:
 | `src/`, `lib/`, `app/` | Read-only | App zone - requires user confirmation |
 
 **NEVER** suggest modifications to `.claude/`. Direct users to `.claude/overrides/` or `.loa.config.yaml`.
+
+Agents MAY proactively run read-only CLI tools (e.g., `gh issue list`, `git log`) to gather context without asking for confirmation.
 </zone_constraints>
 
 <integrity_precheck>
@@ -63,69 +80,15 @@ The SDD specifies "PostgreSQL 15 with pgvector extension" (sdd.md:L123)
 ```
 </factual_grounding>
 
-<structured_memory_protocol>
-## Structured Memory Protocol
+<context_discipline>
+## Context Discipline
 
-### On Session Start
-1. Read `grimoires/loa/NOTES.md`
-2. Restore context from "Session Continuity" section
-3. Check for resolved blockers
-
-### During Execution
-1. Log decisions to "Decision Log"
-2. Add discovered issues to "Technical Debt"
-3. Update sub-goal status
-4. **Apply Tool Result Clearing** after each tool-heavy operation
-
-### Before Compaction / Session End
-1. Summarize session in "Session Continuity"
-2. Ensure all blockers documented
-3. Verify all raw tool outputs have been decayed
-</structured_memory_protocol>
-
-<tool_result_clearing>
-## Tool Result Clearing
-
-After tool-heavy operations (grep, cat, tree, API calls):
-1. **Synthesize**: Extract key info to NOTES.md or discovery/
-2. **Summarize**: Replace raw output with one-line summary
-3. **Clear**: Release raw data from active reasoning
-
-Example:
-```
-# Raw grep: 500 tokens -> After decay: 30 tokens
-"Found 47 AuthService refs across 12 files. Key locations in NOTES.md."
-```
-</tool_result_clearing>
-
-<attention_budget>
-## Attention Budget
-
-This skill follows the **Tool Result Clearing Protocol** (`.claude/protocols/tool-result-clearing.md`).
-
-### Token Thresholds
-
-| Context Type | Limit | Action |
-|--------------|-------|--------|
-| Single search result | 2,000 tokens | Apply 4-step clearing |
-| Accumulated results | 5,000 tokens | MANDATORY clearing |
-| Full file load | 3,000 tokens | Single file, synthesize immediately |
-| Session total | 15,000 tokens | STOP, synthesize to NOTES.md |
-
-### Clearing Triggers for Sprint Planning
-
-- [ ] PRD/SDD combined >3K tokens
-- [ ] Task breakdown search >10 matches
-- [ ] Dependency mapping >20 items
-- [ ] Any analysis exceeding 2K tokens
-
-### 4-Step Clearing
-
-1. **Extract**: Max 10 files, 20 words per finding
-2. **Synthesize**: Write to `grimoires/loa/NOTES.md`
-3. **Clear**: Remove raw output from context
-4. **Summary**: `"Planning: N requirements → M tasks → sprint.md"`
-</attention_budget>
+Follow `.claude/protocols/tool-result-clearing.md`. Thresholds: single result >2K tokens /
+accumulated >5K / full file >3K / session total >15K → extract findings (≤10 files, ≤20 words
+each, with file:line) to `grimoires/loa/NOTES.md`, then reason from the synthesis, not raw dumps.
+Session start: read NOTES.md "Session Continuity". Session end / pre-compaction: update it
+(decisions → Decision Log, discovered issues → Technical Debt).
+</context_discipline>
 
 <trajectory_logging>
 ## Trajectory Logging
@@ -139,7 +102,7 @@ Log each significant step to `grimoires/loa/a2a/trajectory/{agent}-{date}.jsonl`
 
 <kernel_framework>
 ## Task (N - Narrow Scope)
-Transform PRD and SDD into actionable sprint plan with 2.5-day sprints. Generate `grimoires/loa/sprint.md`.
+Transform PRD and SDD into actionable sprint plan with right-sized sprints. Generate `grimoires/loa/sprint.md`.
 
 ## Context (L - Logical Structure)
 - **Input**: `grimoires/loa/prd.md` (requirements), `grimoires/loa/sdd.md` (technical design)
@@ -150,7 +113,7 @@ Transform PRD and SDD into actionable sprint plan with 2.5-day sprints. Generate
 ## Constraints (E - Explicit)
 - DO NOT proceed until you've read both `grimoires/loa/prd.md` AND `grimoires/loa/sdd.md` completely
 - DO NOT create sprints until clarifying questions are answered
-- DO NOT plan more than 2.5 days of work per sprint
+- DO NOT plan more than 10 tasks per sprint. Size sprints as SMALL (1-3 tasks), MEDIUM (4-6 tasks), or LARGE (7-10 tasks)
 - DO NOT skip checking `grimoires/loa/a2a/integration-context.md` for project state and priorities
 - DO check current project status (Product Home) before planning if integration context exists
 - DO review priority signals (CX Triage, community feedback volume) if available
@@ -345,7 +308,7 @@ Check if `grimoires/loa/a2a/auditor-sprint-feedback.md` exists:
 - Engineers must address feedback before new work
 - STOP: "The previous sprint has unresolved security issues. Engineers should run /implement to address grimoires/loa/a2a/auditor-sprint-feedback.md before planning new sprints."
 
-**If exists + "APPROVED - LETS FUCKING GO":**
+**If exists + "APPROVED - LET'S FUCKING GO":**
 - Previous sprint passed security audit
 - Safe to proceed with next sprint planning
 
@@ -412,7 +375,7 @@ Design sprint breakdown with:
 
 **Per Sprint (see template in `resources/templates/sprint-template.md`):**
 - Sprint Goal (1 sentence)
-- Duration: 2.5 days with specific dates
+- Scope: SMALL / MEDIUM / LARGE (based on task count)
 - Deliverables with checkboxes
 - Acceptance Criteria (testable)
 - Technical Tasks (specific) - annotate with goal contributions: `→ **[G-1]**`
@@ -446,7 +409,7 @@ Design sprint breakdown with:
 Self-Review Checklist:
 - [ ] All MVP features from PRD are accounted for
 - [ ] Sprints build logically on each other
-- [ ] Each sprint is feasible within 2.5 days
+- [ ] Each sprint is feasible as a single iteration
 - [ ] All deliverables have checkboxes for tracking
 - [ ] Acceptance criteria are clear and testable
 - [ ] Technical approach aligns with SDD
@@ -465,7 +428,7 @@ See `resources/templates/sprint-template.md` for full structure.
 
 Each sprint includes:
 - Sprint number and theme
-- Duration (2.5 days) with dates
+- Scope (SMALL/MEDIUM/LARGE) with task count
 - Sprint Goal (single sentence)
 - Deliverables with checkboxes
 - Acceptance Criteria with checkboxes
@@ -478,7 +441,7 @@ Each sprint includes:
 <success_criteria>
 - **Specific**: Every task is actionable without additional clarification
 - **Measurable**: Progress tracked via checkboxes
-- **Achievable**: Each sprint is feasible within 2.5 days
+- **Achievable**: Each sprint is feasible as a single iteration
 - **Relevant**: All tasks trace back to PRD/SDD
 - **Time-bound**: Sprint dates are specific
 </success_criteria>
@@ -597,3 +560,54 @@ Read theme from `.loa.config.yaml` visual_communication.theme setting.
 
 Diagram inclusion is **optional** for sprint plans - use agent discretion.
 </visual_communication>
+
+<post_completion>
+## Post-Completion Debrief
+
+After saving the Sprint Plan to `grimoires/loa/sprint.md`, MUST run `.claude/scripts/validate-artifact.sh --type sprint --file grimoires/loa/sprint.md` before the debrief; repair per its output on exit 1; exit 2 (usage/file-not-found) is a validator FAILURE — fix the path and re-run, do not proceed. ALWAYS present a structured debrief before the user decides to continue.
+
+### Debrief Structure
+
+Present the following in this exact order:
+
+1. **Confirmation**: "✓ Sprint Plan saved to grimoires/loa/sprint.md"
+
+2. **Key Decisions** (3-5 items): The most impactful planning choices. Each decision should be one line: "• {choice made} (not {alternative rejected})"
+
+3. **Assumptions** (1-3 items): Things assumed true but not explicitly confirmed by the user. Each assumption should be falsifiable: "• {assumption} — if wrong, {consequence}"
+
+4. **Biggest Tradeoff** (1 item): The most consequential either/or decision. Format: "• Chose {A} over {B} — {reason}. Risk: {what could go wrong}"
+
+5. **Steer Prompt**: Use AskUserQuestion:
+
+```yaml
+question: "Sprint plan ready. Anything to steer before implementation?"
+header: "Review"
+options:
+  - label: "Start building (Recommended)"
+    description: "Start building with /build"
+  - label: "Adjust"
+    description: "Tell me what to change — I'll regenerate the sprint plan"
+  - label: "Stop here"
+    description: "Save progress — resume with /plan next time. Not what you expected? /feedback helps us fix it."
+multiSelect: false
+```
+
+### "Adjust" Flow
+
+When the user selects "Adjust":
+
+1. **Prompt**: "What would you like to change?" (free-text via AskUserQuestion "Other")
+2. **Scope**: Regenerate the Sprint Plan ONLY (not rerun the entire planning phase)
+3. **Context preserved**: PRD, SDD, and all planning decisions are retained
+4. **Output**: After regeneration, re-present the debrief with updated decisions/assumptions/tradeoffs
+5. **Diff awareness**: If changes are small, note what changed: "Updated: {decision that changed}"
+6. **Loop limit**: Max 3 adjustment rounds before suggesting "Start building" more firmly
+
+### Constraints
+
+- Keep decisions to 3-5 items — not an exhaustive list
+- Each item is ONE line — no paragraphs
+- "Start building" is always the first option (recommended) — this is the final planning phase
+- "Stop here" always includes /feedback mention
+</post_completion>

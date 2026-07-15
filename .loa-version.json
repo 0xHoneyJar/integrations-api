@@ -4,13 +4,24 @@
   "last_sync": null,
   "zones": {
     "system": ".claude",
-    "state": ["grimoires", ".beads", ".ck", ".run"],
-    "app": ["src", "lib", "app"]
+    "state": [
+      "grimoires",
+      ".beads",
+      ".ck",
+      ".run"
+    ],
+    "app": [
+      "src",
+      "lib",
+      "app"
+    ]
   },
-  "migrations_applied": ["1.1.0-beads-rust"],
+  "migrations_applied": [
+    "1.1.0-beads-rust"
+  ],
   "integrity": {
     "enforcement": "strict",
-    "last_verified": null
+    "last_verified": "2026-07-15T18:38:59Z"
   },
   "dependencies": {
     "ck": {

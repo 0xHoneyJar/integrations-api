@@ -22,11 +22,26 @@
 set -euo pipefail
 
 # Source bootstrap for PROJECT_ROOT and path-lib
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# perf(pass-5): dirname → parameter expansion (fork+exec eliminated).
+_gp_src="${BASH_SOURCE[0]}"
+case "${_gp_src}" in
+    */*) _gp_dir="${_gp_src%/*}"; [[ -n "${_gp_dir}" ]] || _gp_dir="/" ;;
+    *)   _gp_dir="." ;;
+esac
+SCRIPT_DIR="$(cd "${_gp_dir}" && pwd)"
+unset _gp_src _gp_dir
 source "${SCRIPT_DIR}/bootstrap.sh"
+source "${SCRIPT_DIR}/compat-lib.sh"
 
-# Resolve paths using path-lib getters
-_GP_GRIMOIRE_DIR=$(get_grimoire_dir)
+# Resolve paths using path-lib getters.
+# bug-980: errexit is disabled when this file is sourced from a suppressed
+# context (the normal skill-invocation shape), so a failing substitution
+# does NOT abort — guard explicitly and return (sourced) or exit loud.
+_GP_GRIMOIRE_DIR=$(get_grimoire_dir) || _GP_GRIMOIRE_DIR=""
+if [[ -z "${_GP_GRIMOIRE_DIR}" ]]; then
+  echo "[golden-path] ERROR: grimoire dir unresolved (path-lib init failed) — refusing phase detection against root-anchored paths" >&2
+  return 1 2>/dev/null || exit 1
+fi
 _GP_PRD_FILE="${_GP_GRIMOIRE_DIR}/prd.md"
 _GP_SDD_FILE="${_GP_GRIMOIRE_DIR}/sdd.md"
 _GP_SPRINT_FILE="${_GP_GRIMOIRE_DIR}/sprint.md"
@@ -73,6 +88,12 @@ _gp_sprint_is_complete() {
 # Check if a sprint has been reviewed (no findings or no required changes).
 # Detection: feedback file exists AND contains no "## Changes Required" or "## Findings" sections,
 # OR the sprint has already passed audit (which implies review was acceptable).
+#
+# C8 (cycle-119): structured-first. If the feedback file carries a LOA-VERDICT
+# machine trailer (C6), trust verdict-derive.sh's derived verdict instead of
+# the prose heuristic below. Legacy files (no trailer) are byte-identical to
+# pre-cycle-119 behavior — the trailer check is a no-op grep that falls
+# straight through when no trailer is present.
 _gp_sprint_is_reviewed() {
     local sprint_id="$1"
     local sprint_dir="${_GP_A2A_DIR}/${sprint_id}"
@@ -83,7 +104,19 @@ _gp_sprint_is_reviewed() {
     fi
 
     if [[ -f "${sprint_dir}/engineer-feedback.md" ]]; then
-        # If feedback file has no actionable findings, review passed
+        # R2 review (cycle-119): gate on -f + `bash <script>` (not -x) so a
+        # chmod-lost executable bit cannot silently drop a present trailer
+        # back to the legacy prose heuristic (which could reverse the verdict).
+        if [[ -f "${SCRIPT_DIR}/verdict-derive.sh" ]] && \
+           grep -q '<!-- LOA-VERDICT ' "${sprint_dir}/engineer-feedback.md" 2>/dev/null; then
+            local verdict_json verdict rc
+            verdict_json=$(bash "${SCRIPT_DIR}/verdict-derive.sh" --file "${sprint_dir}/engineer-feedback.md" --gate review --json 2>/dev/null) && rc=0 || rc=$?
+            verdict=$(echo "${verdict_json}" | jq -r '.verdict // empty' 2>/dev/null) || verdict=""
+            [[ "${verdict}" == "APPROVED" ]] && return 0
+            return 1
+        fi
+
+        # Legacy prose logic (byte-identical to pre-cycle-119 behavior)
         if ! grep -qE "^## (Changes Required|Findings|Issues)" "${sprint_dir}/engineer-feedback.md" 2>/dev/null; then
             return 0
         fi
@@ -93,11 +126,24 @@ _gp_sprint_is_reviewed() {
 }
 
 # Check if a sprint has been audited
+#
+# C8 (cycle-119): structured-first, same shape as _gp_sprint_is_reviewed above.
 _gp_sprint_is_audited() {
     local sprint_id="$1"
     local sprint_dir="${_GP_A2A_DIR}/${sprint_id}"
 
     if [[ -f "${sprint_dir}/auditor-sprint-feedback.md" ]]; then
+        # R2 review (cycle-119): -f + bash invocation, same rationale as above.
+        if [[ -f "${SCRIPT_DIR}/verdict-derive.sh" ]] && \
+           grep -q '<!-- LOA-VERDICT ' "${sprint_dir}/auditor-sprint-feedback.md" 2>/dev/null; then
+            local verdict_json verdict rc
+            verdict_json=$(bash "${SCRIPT_DIR}/verdict-derive.sh" --file "${sprint_dir}/auditor-sprint-feedback.md" --gate audit --json 2>/dev/null) && rc=0 || rc=$?
+            verdict=$(echo "${verdict_json}" | jq -r '.verdict // empty' 2>/dev/null) || verdict=""
+            [[ "${verdict}" == "APPROVED" ]] && return 0
+            return 1
+        fi
+
+        # Legacy prose logic (byte-identical to pre-cycle-119 behavior)
         grep -q "APPROVED" "${sprint_dir}/auditor-sprint-feedback.md" 2>/dev/null
         return $?
     fi
@@ -399,8 +445,8 @@ golden_trajectory() {
         *) flag="" ;;
     esac
 
-    # Time-bounded: 2-second timeout
-    timeout 2 "$script" $flag 2>/dev/null || return 0
+    # Time-bounded: 2-second timeout (portable via compat-lib.sh)
+    run_with_timeout 2 "$script" $flag 2>/dev/null || return 0
 }
 
 # ─────────────────────────────────────────────────────────────
@@ -829,6 +875,80 @@ golden_bridge_progress() {
 }
 
 # ─────────────────────────────────────────────────────────────
+# Installation Boundary Report (Task 2.4 — cycle-035 sprint-2)
+# ─────────────────────────────────────────────────────────────
+
+# Detect installation mode from .loa-version.json.
+# Returns: "submodule" | "vendored" | "unknown"
+golden_detect_install_mode() {
+    local version_file="${PROJECT_ROOT}/.loa-version.json"
+    if [[ ! -f "${version_file}" ]]; then
+        echo "unknown"
+        return
+    fi
+
+    local mode
+    mode=$(jq -r '.installation_mode // "standard"' "${version_file}" 2>/dev/null)
+    case "${mode}" in
+        submodule) echo "submodule" ;;
+        standard)  echo "vendored" ;;
+        *)         echo "unknown" ;;
+    esac
+}
+
+# Generate installation boundary report for /loa status display.
+# Returns multi-line report to stdout.
+golden_boundary_report() {
+    local version_file="${PROJECT_ROOT}/.loa-version.json"
+    if [[ ! -f "${version_file}" ]]; then
+        echo "  Installation: not detected (.loa-version.json missing)"
+        return
+    fi
+
+    local mode fw_version commit_hash
+    mode=$(golden_detect_install_mode)
+    fw_version=$(jq -r '.framework_version // "unknown"' "${version_file}" 2>/dev/null)
+
+    echo "  Mode:      ${mode}"
+    echo "  Version:   ${fw_version}"
+
+    if [[ "${mode}" == "submodule" ]]; then
+        commit_hash=$(jq -r '.submodule.commit // "unknown"' "${version_file}" 2>/dev/null)
+        local submodule_path
+        submodule_path=$(jq -r '.submodule.path // ".loa"' "${version_file}" 2>/dev/null)
+        echo "  Commit:    ${commit_hash:0:12}"
+        echo "  Submodule: ${submodule_path}"
+
+        # Count files in submodule
+        if [[ -d "${PROJECT_ROOT}/${submodule_path}" ]]; then
+            local sub_file_count
+            sub_file_count=$(find "${PROJECT_ROOT}/${submodule_path}" -type f | wc -l | tr -d ' ')
+            echo "  Submodule files: ${sub_file_count}"
+        fi
+    fi
+
+    # Count tracked .claude/ files
+    local tracked_count
+    tracked_count=$(git ls-files .claude/ 2>/dev/null | wc -l | tr -d ' ')
+    echo "  Tracked .claude/ files: ${tracked_count}"
+
+    # Count gitignored files
+    local ignored_count
+    ignored_count=$(git ls-files --others --ignored --exclude-standard .claude/ 2>/dev/null | wc -l | tr -d ' ')
+    echo "  Gitignored .claude/ files: ${ignored_count}"
+
+    # List user-owned tracked files (non-symlink)
+    local user_files
+    user_files=$(git ls-files .claude/overrides/ .claude/commands/ 2>/dev/null | head -10)
+    if [[ -n "${user_files}" ]]; then
+        echo "  User-owned tracked files:"
+        while IFS= read -r f; do
+            echo "    ${f}"
+        done <<< "${user_files}"
+    fi
+}
+
+# ─────────────────────────────────────────────────────────────
 # Truename Resolution
 # ─────────────────────────────────────────────────────────────
 
@@ -899,3 +1019,20 @@ golden_resolve_truename() {
             ;;
     esac
 }
+
+# R-013 (bd-m1o6, agent-ergonomics pass 1): this file is a sourced function
+# library — direct execution used to silently no-op with exit 0, which an
+# agent probing it like any other script could not distinguish from success.
+# Executed (not sourced) → teach the correct invocation instead.
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    {
+        echo "golden-path.sh is a sourced function library, not an executable command."
+        echo "Usage:   source .claude/scripts/golden-path.sh"
+        echo "Then:    golden_detect_workflow_state | golden_suggest_command [--json] |"
+        echo "         golden_resolve_truename <plan|build|review|ship> [override] |"
+        echo "         golden_format_journey | golden_check_ship_ready | golden_menu_options [--json]"
+        echo "Machine-readable status: .claude/scripts/loa-status.sh --triage --json  (state + health + next, one call)"
+        echo "Script contract surface: .claude/scripts/loa-capabilities.sh --json"
+    } >&2
+    exit 2
+fi

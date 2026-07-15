@@ -9,7 +9,6 @@ categories:
       - mibera/cosmology.yaml
       - mibera/rituals.yaml
       - mibera/glossary.yaml
-      - mibera/codex-releases.yaml
   - id: neuromancer
     label: "Neuromancer / Sprawl Trilogy"
     description: "Gibson's cyberpunk naming universe — ICE, cyberspace, jacking in"
@@ -25,6 +24,7 @@ categories:
 tags:
   - philosophy
   - naming
+  - narrative-architecture
   - architecture
   - time
   - multi-model
@@ -32,3 +32,8 @@ tags:
   - security
   - autonomy
   - discovered
+  - governance
+  - consensus
+  - deliberation
+  - review
+  - cross-ecosystem

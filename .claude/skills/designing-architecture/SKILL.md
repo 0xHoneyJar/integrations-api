@@ -1,4 +1,20 @@
 ---
+name: architect
+description: Create comprehensive Software Design Document based on PRD
+role: planning
+effort: high  # cycle-114 FR-3: deep-reasoning skill — override baseline /effort
+capabilities:
+  schema_version: 1
+  read_files: true
+  search_code: true
+  write_files: true
+  execute_commands: false
+  web_access: false
+  user_interaction: true
+  agent_spawn: false
+  task_management: false
+cost-profile: moderate
+context: fork
 parallel_threshold: null
 timeout_minutes: 60
 zones:
@@ -31,6 +47,8 @@ This skill operates under **Managed Scaffolding**:
 | `src/`, `lib/`, `app/` | Read-only | App zone - requires user confirmation |
 
 **NEVER** suggest modifications to `.claude/`. Direct users to `.claude/overrides/` or `.loa.config.yaml`.
+
+Agents MAY proactively run read-only CLI tools (e.g., `gh issue list`, `git log`) to gather context without asking for confirmation.
 </zone_constraints>
 
 <integrity_precheck>
@@ -63,69 +81,15 @@ The SDD specifies "PostgreSQL 15 with pgvector extension" (sdd.md:L123)
 ```
 </factual_grounding>
 
-<structured_memory_protocol>
-## Structured Memory Protocol
+<context_discipline>
+## Context Discipline
 
-### On Session Start
-1. Read `grimoires/loa/NOTES.md`
-2. Restore context from "Session Continuity" section
-3. Check for resolved blockers
-
-### During Execution
-1. Log decisions to "Decision Log"
-2. Add discovered issues to "Technical Debt"
-3. Update sub-goal status
-4. **Apply Tool Result Clearing** after each tool-heavy operation
-
-### Before Compaction / Session End
-1. Summarize session in "Session Continuity"
-2. Ensure all blockers documented
-3. Verify all raw tool outputs have been decayed
-</structured_memory_protocol>
-
-<tool_result_clearing>
-## Tool Result Clearing
-
-After tool-heavy operations (grep, cat, tree, API calls):
-1. **Synthesize**: Extract key info to NOTES.md or discovery/
-2. **Summarize**: Replace raw output with one-line summary
-3. **Clear**: Release raw data from active reasoning
-
-Example:
-```
-# Raw grep: 500 tokens -> After decay: 30 tokens
-"Found 47 AuthService refs across 12 files. Key locations in NOTES.md."
-```
-</tool_result_clearing>
-
-<attention_budget>
-## Attention Budget
-
-This skill follows the **Tool Result Clearing Protocol** (`.claude/protocols/tool-result-clearing.md`).
-
-### Token Thresholds
-
-| Context Type | Limit | Action |
-|--------------|-------|--------|
-| Single search result | 2,000 tokens | Apply 4-step clearing |
-| Accumulated results | 5,000 tokens | MANDATORY clearing |
-| Full file load | 3,000 tokens | Single file, synthesize immediately |
-| Session total | 15,000 tokens | STOP, synthesize to NOTES.md |
-
-### Clearing Triggers for Architecture Design
-
-- [ ] Codebase probing >30 files
-- [ ] Pattern search >20 matches
-- [ ] Technology research >5 sources
-- [ ] Any analysis exceeding 2K tokens
-
-### 4-Step Clearing
-
-1. **Extract**: Max 10 files, 20 words per finding
-2. **Synthesize**: Write to `grimoires/loa/NOTES.md`
-3. **Clear**: Remove raw output from context
-4. **Summary**: `"Arch: N patterns → M components → sdd.md"`
-</attention_budget>
+Follow `.claude/protocols/tool-result-clearing.md`. Thresholds: single result >2K tokens /
+accumulated >5K / full file >3K / session total >15K → extract findings (≤10 files, ≤20 words
+each, with file:line) to `grimoires/loa/NOTES.md`, then reason from the synthesis, not raw dumps.
+Session start: read NOTES.md "Session Continuity". Session end / pre-compaction: update it
+(decisions → Decision Log, discovered issues → Technical Debt).
+</context_discipline>
 
 <trajectory_logging>
 ## Trajectory Logging
@@ -370,3 +334,55 @@ When making architectural choices:
 - Use diagrams or structured text to illustrate complex concepts
 - Provide concrete examples and sample code where helpful
 </communication_style>
+
+<post_completion>
+## Post-Completion Debrief
+
+After saving the SDD to `grimoires/loa/sdd.md`, MUST run `.claude/scripts/validate-artifact.sh --type sdd --file grimoires/loa/sdd.md` before the debrief; repair per its output on exit 1; exit 2 (usage/file-not-found) is a validator FAILURE — fix the path and re-run, do not proceed. ALWAYS present a structured debrief before the user decides to continue.
+
+### Debrief Structure
+
+Present the following in this exact order:
+
+1. **Confirmation**: "✓ SDD saved to grimoires/loa/sdd.md"
+
+2. **Key Decisions** (3-5 items): The most impactful architectural choices. Each decision should be one line: "• {choice made} (not {alternative rejected})"
+
+3. **Assumptions** (1-3 items): Things assumed true but not explicitly confirmed by the user. Each assumption should be falsifiable: "• {assumption} — if wrong, {consequence}"
+
+4. **Biggest Tradeoff** (1 item): The most consequential either/or decision. Format: "• Chose {A} over {B} — {reason}. Risk: {what could go wrong}"
+
+5. **Steer Prompt**: Use AskUserQuestion:
+
+```yaml
+question: "Anything to steer before sprint planning?"
+header: "Review"
+options:
+  - label: "Continue (Recommended)"
+    description: "Create the sprint plan now"
+  - label: "Adjust"
+    description: "Tell me what to change — I'll regenerate the SDD"
+  - label: "Stop here"
+    description: "Save progress — resume with /plan next time. Not what you expected? /feedback helps us fix it."
+multiSelect: false
+```
+
+### "Adjust" Flow
+
+When the user selects "Adjust":
+
+1. **Prompt**: "What would you like to change?" (free-text via AskUserQuestion "Other")
+2. **Scope**: Regenerate the SDD ONLY (not rerun the entire architecture phase)
+3. **Context preserved**: All prior interview answers, PRD, and design decisions are retained
+4. **Output**: After regeneration, re-present the debrief with updated decisions/assumptions/tradeoffs
+5. **Diff awareness**: If changes are small, note what changed: "Updated: {decision that changed}"
+6. **Loop limit**: Max 3 adjustment rounds before suggesting "Continue" more firmly
+
+### Constraints
+
+- Keep decisions to 3-5 items — not an exhaustive list
+- Each item is ONE line — no paragraphs
+- "Continue" is always the first option (recommended)
+- "Stop here" always includes /feedback mention
+- If Flatline will run next, add a one-line banner BEFORE the steer prompt: "Next: Multi-model review (~30 seconds)"
+</post_completion>
