@@ -23,3 +23,22 @@ export {
   safeDigest,
   quarantineKey,
 } from "./identity.js";
+
+// Ingestion boundary — `ingestUnknown` ONLY (§17.4). `ingestEnvelope` is
+// internal and intentionally NOT re-exported here.
+export { ingestUnknown } from "./ingest.js";
+export {
+  AdapterRegistry,
+  AdapterRegistryLayer,
+  IngestionStore,
+  InMemoryIngestionStoreLayer,
+  makeAdapterRegistry,
+} from "./services.js";
+export type {
+  AdapterFn,
+  AdapterRegistryShape,
+  CommitOutcome,
+  IngestionStoreShape,
+  QuarantineOutcome,
+} from "./services.js";
+export { annotateDisposition, annotateIdentity } from "./telemetry.js";
