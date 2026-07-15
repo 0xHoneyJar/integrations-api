@@ -4,23 +4,23 @@
     "invariant_id": "idempotency",
     "proof_artifact": "packages/integrations-core/tests/identity.test.ts",
     "test_runner": "bun",
-    "passed_at": "2026-07-15T20:45:21.766Z",
-    "commit_sha": "c347b916e378a7bbe86bca3538ffb8b14bbe75eb"
+    "passed_at": "2026-07-15T20:51:50.332Z",
+    "commit_sha": "41c3956455fa07263e4ba32f8c9cf565e97ceab3"
   },
   {
     "slug": "integrations-api",
     "invariant_id": "state_machine_totality",
     "proof_artifact": "packages/integrations-core/tests/coverage.test.ts",
     "test_runner": "bun",
-    "passed_at": "2026-07-15T20:45:21.766Z",
-    "commit_sha": "c347b916e378a7bbe86bca3538ffb8b14bbe75eb"
+    "passed_at": "2026-07-15T20:51:50.332Z",
+    "commit_sha": "41c3956455fa07263e4ba32f8c9cf565e97ceab3"
   },
   {
     "slug": "integrations-api",
     "invariant_id": "schema_enforcement",
     "proof_artifact": "packages/integrations-core/tests/schema.test.ts",
     "test_runner": "bun",
-    "passed_at": "2026-07-15T20:45:21.766Z",
-    "commit_sha": "c347b916e378a7bbe86bca3538ffb8b14bbe75eb"
+    "passed_at": "2026-07-15T20:51:50.332Z",
+    "commit_sha": "41c3956455fa07263e4ba32f8c9cf565e97ceab3"
   }
 ]
