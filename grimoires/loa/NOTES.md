@@ -50,3 +50,18 @@
 - `grimoires/loa/{cycles,notes,memory}` + `observations.jsonl` + `.run/.gitkeep` scaffolded empty (ready for first cycle).
 - **No `src/` or `packages/*/` files were modified.** No npm/bun packages installed/changed. No tracked config (`package.json`, `tsconfig.json`, `bunfig.toml`, `bun.lock`, `README.md`, `.gitignore`) was touched.
 - Pending operator GO: push, open PR, merge.
+
+### 2026-07-15 — Freeside Integrations wave 1 (integrations-api-simstim cycle)
+
+Evolving `freeside-mediums` → the Freeside **integrations** building (operator-ratified: evolutionary direction, `integrations-api` slug, compat preservation, meta-harness-and-governance-first, Discord-first reference vertical). Answer sheet: `grimoires/loa/context/freeside-integrations-kit/`.
+
+**Planning (simstim `simstim-20260715-9f1ef8a0`)** — PRD + SDD + sprint authored, each passed a 3-voice headless Flatline review (codex-headless · cursor/composer-2.5 · grok — all APPROVED, chain_health ok, no degraded mode):
+- **PRD flatline**: 6 HIGH / 12 disputed / 18 blockers → all integrated as PRD §11 (canonical disposition/result model, deterministic event identity, failure taxonomy, bounded classification, redaction contract, artifact paths).
+- **SDD flatline**: 14 disputed / 14 blockers → SDD §16 (tenantId in idempotency key, Conflict as distinct terminal, ingestUnknown boundary, rawPayloadHash verify, provider-dispatch, canonicalization contract).
+- **Sprint flatline**: 14 disputed / 14 blockers → SDD §17 (upstreamEventId = transport-assigned delivery id — Discord Gateway has NO durable per-event id, verified vs primary source; quarantine-record identity; trust boundary MUST; NON-PRODUCTION spine DoD; Ed25519 security continuation).
+
+**Key reconciliation**: repo resolves `effect@3.21.2` (NOT the smol/4.x beta the kit's reference-implementation targets) — reference reconciled to 3.21.2 idioms, never copied. Baseline green pre-cycle: typecheck 3/3, tests 324/0, build 3/3.
+
+**Design**: new additive package `@0xhoneyjar/integrations-core` (in-memory, deterministic, no secrets/network this wave); `@0xhoneyjar/medium-registry` untouched (compat = presentation domain). 5 bounded sprints (beads `mediums-api-sprint-1..5`). Telegram/Luma = written continuation only.
+
+Flatline route evidence + integration decisions: `.run/flatline-evidence/`.

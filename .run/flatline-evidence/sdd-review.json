@@ -1,0 +1,345 @@
+{
+  "consensus_summary": {
+    "high_consensus_count": 0,
+    "disputed_count": 14,
+    "low_value_count": 0,
+    "blocker_count": 14,
+    "model_agreement_percent": 0,
+    "models": 3,
+    "tertiary_items": 2,
+    "confidence": "single_model"
+  },
+  "high_consensus": [],
+  "disputed": [
+    {
+      "id": "IMP-001",
+      "description": "Returning Committed while no quarantine record is persisted is a direct contract violation between observable results and durable state. The fix is narrowly scoped (atomic persist or a distinct non-committed outcome) and restores auditability for conflict handling.",
+      "gpt_score": 940,
+      "opus_score": 0,
+      "tertiary_score": 940,
+      "delta": 940,
+      "average_score": 940,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-002",
+      "description": "A single public entry point that accepts unknown input and owns decode-failure quarantine closes a foundational gap: the package cannot enforce its stated failure taxonomy if callers must pre-decode. Field-population rules for malformed envelopes need explicit design but are tractable.",
+      "gpt_score": 910,
+      "opus_score": 0,
+      "tertiary_score": 905,
+      "delta": 910,
+      "average_score": 910,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-003",
+      "description": "An untrusted rawPayloadHash that identity and persistence ignore silently undermines integrity and forensic trust. Reconciling via removal, equality validation with quarantine, or explicit dual-hash semantics is low-cost relative to the evidence guarantee gained.",
+      "gpt_score": 895,
+      "opus_score": 0,
+      "tertiary_score": 915,
+      "delta": 895,
+      "average_score": 895,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-004",
+      "description": "Provider-dispatched adapter registration and a defined unknown-provider path are required for the stated reason codes to be reachable and for multi-provider envelopes not to hit the wrong normalizer. Some schema tension with a closed Provider enum may require a small redesign, but the gap is real.",
+      "gpt_score": 870,
+      "opus_score": 0,
+      "tertiary_score": 875,
+      "delta": 870,
+      "average_score": 870,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-005",
+      "description": "Idempotency and conflict detection depend on deterministic canonical hashing; 'sort keys recursively' is underspecified for runtime Unknown values and can throw, collide, or diverge across runs. A full canonicalization contract is higher effort but load-bearing for correctness.",
+      "gpt_score": 885,
+      "opus_score": 0,
+      "tertiary_score": 890,
+      "delta": 885,
+      "average_score": 885,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-006",
+      "description": "Canonical timestamp validation and ordering rules improve replay, reconciliation, and evidence consistency, but the ingest path can function without them in the near term. Clear value with moderate implementation and test cost.",
+      "gpt_score": 735,
+      "opus_score": 0,
+      "tertiary_score": 685,
+      "delta": 735,
+      "average_score": 735,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-007",
+      "description": "Emitting disposition and reasonCode before normalization misaligns telemetry with actual pipeline state, and undefined telemetry failure behavior leaves a hole in the failure taxonomy. Valuable observability fix with some API redesign across stages.",
+      "gpt_score": 710,
+      "opus_score": 0,
+      "tertiary_score": 625,
+      "delta": 710,
+      "average_score": 710,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-008",
+      "description": "Inspecting store contents after commit, duplicate, and conflict operations is high-leverage, relatively cheap test work that proves persistence, audit trail, and isolation properties that result counts alone cannot. Especially important given current key scoping.",
+      "gpt_score": 925,
+      "opus_score": 0,
+      "tertiary_score": 865,
+      "delta": 925,
+      "average_score": 925,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-009",
+      "description": "If connectionId is tenant-local, omitting tenantId from the idempotency key allows cross-tenant duplicate/conflict misclassification—a serious isolation defect. Including tenantId or documenting and enforcing global uniqueness is a clear, high-ROI fix.",
+      "gpt_score": 935,
+      "opus_score": 0,
+      "tertiary_score": 955,
+      "delta": 935,
+      "average_score": 935,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-010",
+      "description": "Structural file checks alone let stale or inconsistent governance artifacts pass AC-9. Runtime schema validation plus semantic invariant tests make evidence objectively meaningful; effort is moderate and priority is below core ingest correctness.",
+      "gpt_score": 755,
+      "opus_score": 0,
+      "tertiary_score": 720,
+      "delta": 755,
+      "average_score": 755,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-011",
+      "description": "Without a machine-readable test-outcome input and explicit artifact lifecycle, coverage receipts can be nondeterministic or imply success after failed tests. Specifying CI ordering and fail-closed generation closes an evidence-integrity gap at reasonable cost.",
+      "gpt_score": 740,
+      "opus_score": 0,
+      "tertiary_score": 695,
+      "delta": 740,
+      "average_score": 740,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-012",
+      "description": "Schema-level constraints on identifiers, digest format, contract versions, and role normalization add defense in depth at normalization boundaries. Good incremental hardening, but less urgent than store, identity, and tenant-isolation fixes.",
+      "gpt_score": 680,
+      "opus_score": 0,
+      "tertiary_score": 735,
+      "delta": 680,
+      "average_score": 680,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-013",
+      "description": "The contract version's role should be explicit, but runtime validation may add coupling and rollout hazards. At minimum it should be defined as telemetry or validation; strict enforcement should only be added if manifests are authoritative and reliably available.",
+      "gpt_score": 0,
+      "opus_score": 645,
+      "tertiary_score": null,
+      "delta": 645,
+      "average_score": 645,
+      "source": "tertiary_authored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-014",
+      "description": "Duplicated Tier definitions and unclear correspondence invite type drift and inconsistent reporting. Consolidating the schema and documenting the mapping is inexpensive, although separate domain-specific tier types may be preferable if the concepts are not truly identical.",
+      "gpt_score": 0,
+      "opus_score": 735,
+      "tertiary_score": null,
+      "delta": 735,
+      "average_score": 735,
+      "source": "tertiary_authored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    }
+  ],
+  "low_value": [],
+  "blockers": [
+    {
+      "id": "SKP-005",
+      "concern": "Envelope carries `rawPayloadHash` but ingest always digests `e.payload` via `canonicalDigest` and never verifies equality with `rawPayloadHash`.",
+      "severity": "HIGH",
+      "severity_score": 740,
+      "why_matters": "Integrity field becomes dead/trust-me data; tampered or mismatched payload vs claimed hash will still commit under a digest of the mutated payload, defeating forensic binding (PRD §11.5).",
+      "location": "§4.1 RawEventEnvelope.rawPayloadHash; §5 canonicalDigest; §6.3 ingestEnvelope",
+      "recommendation": "On ingest, require `rawPayloadHash === canonicalDigest(payload)` (or define allowed hash algorithm + normalize rules) and quarantine/fail on mismatch; test both match and mismatch.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-002",
+      "concern": "First write wins permanently: once a key is stored with digest A, a later event with the same key and digest B always becomes id-conflict quarantine. A poison-pill first ingest (malformed/quarantined or wrong payload) permanently blocks a corrected replay of the same upstreamEventId.",
+      "severity": "CRITICAL",
+      "severity_score": 860,
+      "why_matters": "Wave-1 makes this the observable contract for production backends (AD-3/PRD §11.6). Without a recovery/admin path, operators cannot heal bad first commits without out-of-band store surgery.",
+      "location": "§5 id-conflict rule; §6.2 Ref.modify conflict branch; §6.3 conflict→Committed+Quarantined",
+      "recommendation": "Define explicit recovery semantics (admin invalidate, supersede-with-audit, or versioned keys), document that first disposition is sticky, and test poison-pill then corrected-replay behavior.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-004",
+      "concern": "Id-conflict store outcomes are returned as Committed, not a distinct failure/duplicate result tag",
+      "severity": "HIGH",
+      "severity_score": 710,
+      "why_matters": "Operators and automation that treat Committed as successful ingestion without inspecting nested disposition will miss integrity violations; retries and metrics may count conflicts as commits",
+      "location": "Section 6.3 (status === 'conflict' branch), Section 4.4 (IngestionResult union)",
+      "recommendation": "Add a dedicated result variant (e.g., Conflict) or return Duplicate with a correlation/disposition hint; at minimum require disposition._tag inspection in tests and document Committed+Quarantined{id-conflict} as a non-success path in the public contract",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-001",
+      "concern": "Idempotency key omits tenantId (`provider:connectionId:upstreamEventId` or digest fallback). If connectionId is not globally unique across tenants (or is reused after reassignment), two tenants can share a key and silently collide as Duplicate or id-conflict.",
+      "severity": "CRITICAL",
+      "severity_score": 880,
+      "why_matters": "Cross-tenant data loss or false-duplicate suppression violates multi-tenant isolation and is extremely hard to detect after the fact.",
+      "location": "§5 identity.ts idempotencyKey; §6.2 IngestionStore commit; PRD §11.2",
+      "recommendation": "Include tenantId in the key (e.g. `tenantId:provider:connectionId:upstreamEventId`), document connectionId uniqueness invariants, and add tests for same connectionId across two tenants.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-001",
+      "concern": "Idempotency key omits tenantId while envelope carries it; design never states that connectionId is globally unique across tenants",
+      "severity": "CRITICAL",
+      "severity_score": 880,
+      "why_matters": "If connectionId is only unique per tenant (or reused across environments), two tenants' events can collide on the same key and digest, causing cross-tenant duplicate suppression or id-conflict quarantine of legitimate data",
+      "location": "Section 5 (identity.ts idempotencyKey), Section 4.1 (RawEventEnvelope.tenantId), Section 6.2 (IngestionStore.commit)",
+      "recommendation": "Either include tenantId in the idempotency key (`provider:tenantId:connectionId:...`) or document and enforce a global uniqueness invariant on connectionId with a schema/test guard; add an explicit cross-tenant collision test",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-002",
+      "concern": "IngestionResult.upstreamEventId is populated with the composite idempotency key, not the envelope's upstreamEventId (or a stable surrogate when absent)",
+      "severity": "HIGH",
+      "severity_score": 760,
+      "why_matters": "Downstream consumers, telemetry, and reconciliation tooling that expect upstreamEventId per PRD §11.1 will receive a different identifier shape on Duplicate and Committed paths, breaking correlation with provider-native IDs and fallback-key semantics",
+      "location": "Section 6.3 (ingestEnvelope return paths: Duplicate.make and Committed.make)",
+      "recommendation": "Return `e.upstreamEventId ?? key` (or a dedicated `idempotencyKey` field) explicitly; keep upstreamEventId semantically aligned with PRD; add contract tests asserting field meaning for both branches",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-003",
+      "concern": "Malformed-envelope handling is delegated to unspecified callers, but `Quarantined` requires `payloadDigest` and `eventType`, which may be unavailable or untrusted when envelope decoding fails.",
+      "severity": "HIGH",
+      "severity_score": 760,
+      "why_matters": "Different callers can implement inconsistent failure behavior, and severely malformed inputs cannot be represented by the proposed quarantine schema without inventing values or inspecting unvalidated data.",
+      "location": "§4.3 `Quarantined`; §6.3 envelope-decode failure",
+      "recommendation": "Expose a single `ingestUnknown(input: unknown)` boundary that performs decoding and normalization. Define a malformed-envelope record with optional or safely derived fields, bounded hashing behavior, and deterministic placeholders where fields cannot be recovered.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-003",
+      "concern": "No specified behavior when envelope.provider is in the Provider union (telegram, luma) but no adapter is registered in AdapterRegistry",
+      "severity": "HIGH",
+      "severity_score": 740,
+      "why_matters": "Envelope decode succeeds for unimplemented providers, but ingestEnvelope has no path to Ignored/Quarantined{unknown-provider}; likely yields an untyped defect or missing-service failure instead of the documented failure taxonomy",
+      "location": "Section 4.1 (Provider union), Section 6.2–6.3 (AdapterRegistry + ingestEnvelope), Section 4.3 (unknown-provider reason code)",
+      "recommendation": "Define and implement explicit unknown-provider handling before normalize (registry lookup) mapping to Quarantined{unknown-provider}; test telegram/luma envelopes against discord-only layer",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-005",
+      "concern": "The envelope validates timestamps, identifiers, hashes, and contract versions as unrestricted strings.",
+      "severity": "HIGH",
+      "severity_score": 710,
+      "why_matters": "Empty identifiers, invalid timestamps, malformed hashes, oversized values, and noncanonical versions can enter identity, telemetry, and audit records. This weakens determinism and enables resource abuse or misleading evidence.",
+      "location": "§4.1 RawEventEnvelope; §4.2 ObservationMeta; §10 telemetry",
+      "recommendation": "Add branded schemas with non-empty and maximum-length constraints, strict timestamp parsing and normalization, fixed-format SHA-256 validation, and a defined source-contract-version format. Reject or quarantine violations at the unified ingestion boundary.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-002",
+      "concern": "The fallback idempotency key collapses separate legitimate events whenever provider, connection, event type, and payload digest are equal.",
+      "severity": "HIGH",
+      "severity_score": 785,
+      "why_matters": "Repeated identical membership transitions without upstream IDs can be incorrectly classified as duplicates, causing real observations to disappear. Conversely, changing irrelevant payload fields defeats deduplication.",
+      "location": "§5 `idempotencyKey` fallback; INV-2; AC-6",
+      "recommendation": "Define an explicit fallback identity contract using stable event coordinates such as source sequence, observed timestamp, delivery identifier, or a provider-specific identity extractor. If reliable identity is unavailable, quarantine the event instead of pretending content equality proves event identity.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-001",
+      "concern": "The id-conflict path returns `Committed` with a quarantine disposition even though the store does not persist that quarantine record and retains only the original key/digest entry.",
+      "severity": "CRITICAL",
+      "severity_score": 910,
+      "why_matters": "The observable result claims durable acceptance of forensic evidence that is actually discarded. Operators cannot audit conflicts, retries may repeatedly report fictitious commits, and a future backend cannot preserve the stated contract unambiguously.",
+      "location": "§5 event identity; §6.2 IngestionStore; §6.3 conflict branch",
+      "recommendation": "Replace `commit` with one atomic operation that persists either the normal record or an explicit conflict record before returning. Return a distinct `ConflictRecorded` result, or reserve `Committed` strictly for records that were actually stored. Test persisted state and repeated conflict behavior.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-004",
+      "concern": "`Committed`/`Duplicate.upstreamEventId` is populated with the full idempotency `key`, not the envelope's `upstreamEventId` (and fallback keys are composite digests). Field name and value semantics diverge.",
+      "severity": "HIGH",
+      "severity_score": 720,
+      "why_matters": "Downstream correlation, dedupe dashboards, and Discord event linking will mis-key events; fallback-keyed events have no real upstream id but still claim one.",
+      "location": "§4.4 result schemas; §6.3 return Duplicate/Committed.make({ upstreamEventId: key })",
+      "recommendation": "Rename to `idempotencyKey` (or return both `idempotencyKey` and optional `upstreamEventId`) and update tests/AC language to match.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-004",
+      "concern": "`Provider` admits Discord, Telegram, and Luma, while the wave-1 registry exposes only one undifferentiated `normalize` function. The design does not specify provider dispatch or enforce that the Discord adapter rejects non-Discord envelopes as `unknown-provider`.",
+      "severity": "HIGH",
+      "severity_score": 735,
+      "why_matters": "Telegram or Luma envelopes can be misclassified as ordinary unclassified Discord events, making the `unknown-provider` reason effectively unreachable or semantically incorrect. Adding adapters later risks ambiguous routing and accidental cross-provider parsing.",
+      "location": "§4.1 Provider; §4.3 reason codes; §6.2 AdapterRegistry; §7 Discord adapter",
+      "recommendation": "Model the registry as a provider-keyed adapter map with explicit lookup failure, or give each adapter a declared provider identity checked before normalization. Add tests for every admitted-but-unregistered provider and truly unknown raw provider values at the decode boundary.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-003",
+      "concern": "id-conflict is returned as `Committed` with a nested Quarantined disposition, not a distinct non-success result. Callers, metrics, and retries will treat conflicts as successful commits.",
+      "severity": "HIGH",
+      "severity_score": 780,
+      "why_matters": "Breaks operational alerting, retry logic, and consumer semantics; conflicts look like healthy throughput while the new event is discarded.",
+      "location": "§4.4 IngestionResult; §6.3 ingestEnvelope conflict branch; §11 identity tests",
+      "recommendation": "Either add a dedicated result tag (e.g. Conflicted) or require consumers to inspect disposition; never map store `conflict` to `Committed` without a documented, tested consumer contract.",
+      "source": "tertiary_skeptic"
+    }
+  ],
+  "degraded": false,
+  "degraded_model": null,
+  "confidence": "single_model",
+  "phase": "sdd",
+  "document": "grimoires/loa/sdd.md",
+  "domain": "cycle integrations api simstim answer",
+  "tertiary_model_used": "grok-headless",
+  "tertiary_status": "active",
+  "execution": {
+    "mode": "hitl",
+    "mode_reason": "Simstim workflow active (.run/simstim-state.json state=RUNNING)",
+    "run_id": null
+  },
+  "timestamp": "2026-07-15T19:05:34Z",
+  "metrics": {
+    "total_latency_ms": 102000,
+    "cost_cents": 0,
+    "cost_usd": 0
+  }
+}

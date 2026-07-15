@@ -1,0 +1,434 @@
+{
+  "consensus_summary": {
+    "high_consensus_count": 6,
+    "disputed_count": 12,
+    "low_value_count": 0,
+    "blocker_count": 18,
+    "model_agreement_percent": 33,
+    "models": 3,
+    "tertiary_items": 0,
+    "confidence": "full"
+  },
+  "high_consensus": [
+    {
+      "id": "IMP-001",
+      "description": "Mixed disposition terminology (Committed vs Projected, durable results vs normalization outcomes) will cause inconsistent tests, telemetry, and operator-facing reports. A single canonical state/result table is low-cost documentation work with immediate payoff across AC-4, FR-2, FR-3, and INV-1.",
+      "gpt_score": 890,
+      "opus_score": 845,
+      "tertiary_score": 920,
+      "delta": 45,
+      "average_score": 867.5,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "HIGH"
+    },
+    {
+      "id": "IMP-002",
+      "description": "Deterministic upstream event identity is prerequisite for idempotency, duplicate detection, and the no-silent-drop guarantee—especially for malformed or undecodable payloads. Without a defined extraction, synthesis, canonicalization, and fallback contract, implementers will diverge on uniqueness scope and replay behavior.",
+      "gpt_score": 930,
+      "opus_score": 975,
+      "tertiary_score": 955,
+      "delta": 45,
+      "average_score": 952.5,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "HIGH"
+    },
+    {
+      "id": "IMP-003",
+      "description": "Duplicate entry removed in final output.",
+      "gpt_score": 900,
+      "opus_score": 940,
+      "tertiary_score": 920,
+      "delta": 40,
+      "average_score": 920,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "HIGH"
+    },
+    {
+      "id": "IMP-004",
+      "description": "Labeling in-memory Ref state as durable risks false acceptance in reviews and blurs wave-1 contract proof from production persistence. Reframing wave-1 as an observable store contract with preserved properties for a future transactional backend is cheap and prevents architectural misunderstanding.",
+      "gpt_score": 840,
+      "opus_score": 890,
+      "tertiary_score": 890,
+      "delta": 50,
+      "average_score": 865,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "HIGH"
+    },
+    {
+      "id": "IMP-005",
+      "description": "Tier-1 is conformance-gated, yet only GUILD_MEMBER_ADD has a specified mapping while UPDATE and REMOVE remain classified without behavior or an explicit Tier-2 deferral. This makes required implementation scope indeterminate and is a direct blocker to claiming Tier-1 completeness.",
+      "gpt_score": 910,
+      "opus_score": 955,
+      "tertiary_score": 915,
+      "delta": 45,
+      "average_score": 932.5,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "HIGH"
+    },
+    {
+      "id": "IMP-006",
+      "description": "FR-4 covers adapter decode failures but not envelope-level or routing-metadata failures, creating a plausible silent-loss path contrary to INV-1 and INV-8. Specifying decode prerequisites, quarantine behavior, and redacted raw evidence retention closes a high-severity gap with moderate spec and test cost.",
+      "gpt_score": 920,
+      "opus_score": 735,
+      "tertiary_score": 905,
+      "delta": 185,
+      "average_score": 827.5,
+      "source": "gpt_scored",
+      "would_integrate": true,
+      "agreement": "HIGH"
+    }
+  ],
+  "disputed": [
+    {
+      "id": "IMP-007",
+      "description": "AC-9 is not objectively enforceable without canonical artifact paths, versions, and freshness validation. The implementation cost is modest and materially improves CI and audit reliability.",
+      "gpt_score": 0,
+      "opus_score": 900,
+      "tertiary_score": 865,
+      "delta": 900,
+      "average_score": 900,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-008",
+      "description": "The overlapping artifact terminology should be reconciled into one authoritative model with explicit field ownership. Whether represented as one file or several is secondary, but duplication and omission risks are real.",
+      "gpt_score": 0,
+      "opus_score": 790,
+      "tertiary_score": 880,
+      "delta": 790,
+      "average_score": 790,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-009",
+      "description": "Canonical reason codes and separate definitions for event criticality versus coverage classification are important for stable reporting and tests. Avoid over-designing the taxonomy; a small extensible enum is sufficient.",
+      "gpt_score": 0,
+      "opus_score": 825,
+      "tertiary_score": 790,
+      "delta": 825,
+      "average_score": 825,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-010",
+      "description": "A hard-coded global test count is brittle and can pass despite substitutions or fail after legitimate additions. Explicit suite selection and no-regression expectations are more valuable than the exact snapshot mechanism proposed.",
+      "gpt_score": 0,
+      "opus_score": 780,
+      "tertiary_score": 765,
+      "delta": 780,
+      "average_score": 780,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-011",
+      "description": "Traceability is valuable for a contract-heavy change, but requiring every invariant and criterion to map to formal test IDs may create disproportionate process overhead. SDD ratification and targeted traceability for critical requirements should be integrated.",
+      "gpt_score": 0,
+      "opus_score": 665,
+      "tertiary_score": 735,
+      "delta": 665,
+      "average_score": 665,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-012",
+      "description": "Duplicate return semantics should be explicit so consumers and tests do not infer incompatible replay behavior. Returning the prior full disposition may be costly or undesirable, so a minimal stable duplicate result with correlation metadata is preferable.",
+      "gpt_score": 0,
+      "opus_score": 690,
+      "tertiary_score": 740,
+      "delta": 690,
+      "average_score": 690,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-013",
+      "description": "A bounded classification table makes coverage, ignore, and quarantine behavior deterministic. It should cover all events admitted by the wave-1 adapter rather than attempting to catalog the entire evolving Discord Gateway surface.",
+      "gpt_score": 0,
+      "opus_score": 865,
+      "tertiary_score": 770,
+      "delta": 865,
+      "average_score": 865,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-014",
+      "description": "Continuation documents need a lightweight definition of done to satisfy AC-10, but detailed required sections and option formats could become ceremony. A short checklist and named ratification target are enough.",
+      "gpt_score": 0,
+      "opus_score": 635,
+      "tertiary_score": 635,
+      "delta": 635,
+      "average_score": 635,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-015",
+      "description": "A small versioned observation envelope supports additive providers and consistent downstream handling. Keep it limited to genuinely universal metadata so speculative Telegram or Luma needs do not distort the Discord contract.",
+      "gpt_score": 0,
+      "opus_score": 750,
+      "tertiary_score": 685,
+      "delta": 750,
+      "average_score": 750,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-016",
+      "description": "A governed quarantine-to-patch lifecycle is useful, but specifying ownership and promotion mechanics may be premature if wave 1 only produces patch candidates. Define required candidate metadata now and defer the full operating workflow to its owning gate.",
+      "gpt_score": 0,
+      "opus_score": 570,
+      "tertiary_score": 470,
+      "delta": 570,
+      "average_score": 570,
+      "source": "opus_scored",
+      "would_integrate": false,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-017",
+      "description": "A minimal telemetry contract makes failure and disposition paths diagnosable and testable while enforcing payload exclusion. Span names and a compact required attribute set offer good value at low cost.",
+      "gpt_score": 0,
+      "opus_score": 700,
+      "tertiary_score": 520,
+      "delta": 700,
+      "average_score": 700,
+      "source": "opus_scored",
+      "would_integrate": true,
+      "agreement": "DISPUTED"
+    },
+    {
+      "id": "IMP-018",
+      "description": "A template could improve handoff consistency, but it substantially overlaps the stronger proposal to define FR-15 and FR-16 acceptance criteria. Integrate the required content into the canonical continuation artifact rather than adding a separate template requirement.",
+      "gpt_score": 0,
+      "opus_score": 510,
+      "tertiary_score": 545,
+      "delta": 510,
+      "average_score": 510,
+      "source": "opus_scored",
+      "would_integrate": false,
+      "agreement": "DISPUTED"
+    }
+  ],
+  "low_value": [],
+  "blockers": [
+    {
+      "id": "SKP-003",
+      "concern": "Atomicity and idempotency semantics are underspecified: there is no event-key namespace, connection/provider scope, concurrency contract, conflict rule, or definition of what happens when the same key arrives with different content.",
+      "severity": "CRITICAL",
+      "severity_score": 910,
+      "why_matters": "A globally keyed upstreamEventId can collide across providers or connections; concurrent delivery can double-commit; treating altered content as a duplicate can hide provider corruption or replay attacks.",
+      "location": "FR-2, FR-3, AC-6, INV-2",
+      "recommendation": "Specify an idempotency key such as provider + connectionId + upstreamEventId, persist a canonical payload/envelope digest, define linearizable commit behavior, and quarantine or flag same-key/different-digest conflicts. Test parallel commits, cancellation, injected failure, and conflicting replay.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-004",
+      "concern": "Atomicity is specified as one store operation, but wave-1 proves it only via in-memory Ref. Concurrent multi-fiber/multi-process races, crash between half-writes, and 'claim-before-persist' vs 'persist-before-claim' dual failure modes are not fully contracted for a future transactional store.",
+      "severity": "HIGH",
+      "severity_score": 760,
+      "why_matters": "AC-6 can pass against a single-threaded Ref while production Postgres/transactional stores reintroduce duplicates or lost dispositions. False confidence on INV-2 is a classic harness failure mode.",
+      "location": "FR-3, AC-6, INV-2, §7 in-memory reconciliation",
+      "recommendation": "Publish an IngestionStore law suite: concurrent same-id commits yield exactly one Committed and N-1 Duplicate; simulated mid-commit crash leaves either no row or full durable disposition (never id-only or disposition-only); document required isolation level for production implementors.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-004",
+      "concern": "Concurrent ingestion of the same upstream event is not specified; Ref-based in-memory store may pass sequential tests while losing atomic duplicate detection under parallel commit.",
+      "severity": "HIGH",
+      "severity_score": 780,
+      "why_matters": "Gateway redelivery and webhook retries commonly arrive concurrently; duplicate registration races can produce double Projected observations.",
+      "location": "FR-3, AC-6",
+      "recommendation": "Add parallel commit conformance tests and document required linearizability/compare-and-swap semantics for production IngestionStore implementations.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-006",
+      "concern": "Discord Tier-1 requirements are incomplete: member update and removal must be classified as domain signals, but only GUILD_MEMBER_ADD has a required normalized observation and no acceptance criterion proves update/remove behavior.",
+      "severity": "HIGH",
+      "severity_score": 720,
+      "why_matters": "Implementers can satisfy the PRD by labeling events Tier-1 without producing meaningful observations or quarantining them consistently, leaving membership reconstruction incomplete and misleading coverage claims.",
+      "location": "FR-7, AC-4, AC-9",
+      "recommendation": "Specify normalized observations and test cases for add, update, and remove, including role additions/removals, missing cached state, partial payloads, and ordering. If update/remove normalization is out of scope, classify them Tier-2 rather than Tier-1.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-006",
+      "concern": "Disposition vocabulary is dual-layered and easy to mis-implement: G1/INV-1 list projected|ignored|quarantined|duplicate as terminal states, while FR-2 nests Projected/Ignored/Quarantined under Committed|Duplicate. Telemetry, coverage, and tests may count layers inconsistently.",
+      "severity": "HIGH",
+      "severity_score": 720,
+      "why_matters": "Implementers may emit Projected without Committed, treat Duplicate as a disposition sibling of Ignored incorrectly, or double-count. AC-4 can be green under one interpretation and false under another.",
+      "location": "G1, FR-2, FR-10, INV-1, AC-4",
+      "recommendation": "Make the type algebra the single source of truth: terminal store result = Committed(disposition) | Duplicate; disposition = Projected|Ignored|Quarantined. Update G1/INV-1 wording and require exhaustive match tests + golden telemetry field names.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-002",
+      "concern": "FR-4 converts decode/contract failures into Quarantined dispositions with 'no throw escapes ingestion,' but does not separate AdapterContractError from unexpected defects (bugs, invariant violations, store failures, fiber interruption). Over-broad catch-all will classify engineer defects as provider quarantine records.",
+      "severity": "CRITICAL",
+      "severity_score": 860,
+      "why_matters": "If programmer errors become Quarantined, INV-1 looks satisfied while correctness is silently degraded; ops will treat bug storms as 'unknown Discord events.' Atomic commit failures must not be remapped into data dispositions.",
+      "location": "FR-4, FR-10, INV-1, INV-3",
+      "recommendation": "Define a closed error taxonomy: contract/decode → Quarantine; IngestionStore/commit failures → fail the Effect (retry/surface); defects (Match.exhaustive misses, impossible states) → fail loudly with telemetry, never quarantine. Require tests that prove non-contract errors do not become Quarantined.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-003",
+      "concern": "FR-7 requires Tier-1 treatment of GUILD_MEMBER_UPDATE and GUILD_MEMBER_REMOVE but only specifies the observation mapping for GUILD_MEMBER_ADD. UPDATE/REMOVE observation shapes, partial member payloads, role-diff semantics, and leave vs kick ambiguity are undefined.",
+      "severity": "HIGH",
+      "severity_score": 780,
+      "why_matters": "Wave-1 claims a 'smallest complete Discord vertical' proving all dispositions, but Tier-1 domain coverage is incomplete. Adapters will invent folklore (forbidden by INV-3) or quarantine legitimate membership edges, breaking the reference vertical's purpose.",
+      "location": "FR-7, AC-4, INV-3, G2",
+      "recommendation": "Specify exact observation variants for add/update/remove (including whether UPDATE emits full role set vs delta, and REMOVE emits MembershipEnded vs similar), pin them to Discord Gateway field guarantees, and require conformance fixtures for each event type before AC-4 can pass.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-003",
+      "concern": "Failure handling after successful normalization but before durable commit is unspecified; adapter failures map to Quarantined, but store/orchestration failures are not assigned a disposition.",
+      "severity": "CRITICAL",
+      "severity_score": 840,
+      "why_matters": "INV-1 ('no silent drops') can be violated if ingestEnvelope throws, times out, or returns without persisting a disposition when commit fails.",
+      "location": "FR-4, FR-10, INV-1",
+      "recommendation": "Specify orchestration error algebra: commit failures must yield a retriable or quarantined-with-reason outcome, never an unlogged exit; add tests that force commit failure and assert a persisted disposition or explicit retry contract.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-005",
+      "concern": "GUILD_MEMBER_UPDATE and GUILD_MEMBER_REMOVE are classified Tier-1 domain signals in FR-7 but wave-1 minimum implementation only explicitly requires GUILD_MEMBER_ADD normalization.",
+      "severity": "HIGH",
+      "severity_score": 720,
+      "why_matters": "Coverage report may claim Tier-1 membership surface while behavior for update/remove is absent, creating false confidence and downstream graph drift.",
+      "location": "FR-7, FR-5, FR-12, INV-9",
+      "recommendation": "Either implement Tier-1 normalization for UPDATE/REMOVE in wave-1 or reclassify them Tier-2 with explicit deferred reasons in the coverage manifest; forbid Tier-1 labeling without conformance tests.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-001",
+      "concern": "Idempotency and disposition atomicity are proven only with an in-memory Ref-based IngestionStore; this does not demonstrate crash-safe, cross-process, or database transactional semantics required for production ingestion.",
+      "severity": "CRITICAL",
+      "severity_score": 880,
+      "why_matters": "AC-6 and INV-2 can pass in tests while production still exhibits claim-before-persist races, partial writes, or duplicate side effects under crash/retry scenarios.",
+      "location": "FR-3, INV-2, AC-6, §7 (in-memory deterministic scope)",
+      "recommendation": "Define a conformance contract for IngestionStore (e.g., simulated crash between idempotency claim and persist, concurrent duplicate commits) and document Tier-2 gaps explicitly in the coverage report with required production-store properties.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-001",
+      "concern": "Idempotency key for Discord events is unspecified: FR-2/FR-3/AC-6 require atomic commit keyed by upstreamEventId, but the PRD never defines what that id is for Gateway vs REST (snowflake id, (guild_id,user_id,event_type), sequence+session, payload digest, or delivery id). Wrong key choice causes either false duplicates (silent loss of real state transitions) or non-duplicates (re-projection of the same event).",
+      "severity": "CRITICAL",
+      "severity_score": 880,
+      "why_matters": "INV-1 and INV-2 are only as strong as the idempotency identity. An underspecified key makes AC-4/AC-6 passable with tests that do not match Discord delivery reality, then fails under reconnects, resumes, and webhook retries.",
+      "location": "FR-2, FR-3, AC-6, INV-1/INV-2; Discord vertical FR-7–FR-10",
+      "recommendation": "SDD must pin the exact upstreamEventId derivation per transport (Gateway vs future webhook), including multi-shard and resume/replay cases, plus negative tests for same-payload-different-delivery and different-payload-same-member-transition.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-007",
+      "concern": "Security/privacy controls (AC-7, INV-8, INV-10, FR-10) forbid secrets and default-exclude message content, but lack mechanical redaction rules for Discord member payloads (username, global_name, avatar, pending, communication_disabled_until), structured log/span attribute allowlists, and fixture linting.",
+      "severity": "HIGH",
+      "severity_score": 710,
+      "why_matters": "Member events still carry PII-adjacent fields. Without allowlist-based telemetry and fixture scanners, 'no secrets/PII committed' relies on human discipline and will fail the first realistic fixture dump.",
+      "location": "AC-7, FR-10, INV-8, INV-10, FR-8",
+      "recommendation": "Define a field-level retention policy (keep ids + role ids; drop or hash usernames/avatars unless ratified), implement span attribute allowlists tested by negative tests, and add CI grep/schema lint rejecting token-like strings and content fields in fixtures.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-005",
+      "concern": "System-level claim 'no silent drops' (G1/INV-1) is only enforceable after an envelope exists. Wave 1 has no Gateway/webhook transport, reconnect, buffering, or parse-before-envelope stage—events can still disappear before ingestEnvelope without violating ACs.",
+      "severity": "HIGH",
+      "severity_score": 740,
+      "why_matters": "Acceptance may certify INV-1 for the orchestration core while operators believe the integrations building guarantees end-to-end disposition for every Discord delivery. Scope overclaim becomes a governance failure.",
+      "location": "G1, INV-1, AC-4/AC-5, §7 Tier-2 deferred transport, §8 non-goals",
+      "recommendation": "Narrow INV-1 language to 'every envelope accepted by ingestEnvelope…' and require AC-10/handoff to list pre-envelope loss modes as explicit open risks with a named ratification for transport durability.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-002",
+      "concern": "The PRD describes dispositions inconsistently: the algebra uses Projected, Ignored, and Quarantined, while AC-4 requires committed, duplicate, ignored, and quarantined, and INV-1 lists projected, ignored-with-reason, quarantined, or duplicate.",
+      "severity": "HIGH",
+      "severity_score": 785,
+      "why_matters": "Committed is a persistence result containing a disposition, not a peer disposition. Ambiguous state vocabulary can produce invalid schemas, misleading metrics, and tests that fail to prove projection actually occurred.",
+      "location": "FR-2, AC-4, INV-1",
+      "recommendation": "Define two explicit orthogonal enums: CommitOutcome = Committed | Duplicate and IngestionDisposition = Projected | Ignored | Quarantined. Rewrite acceptance criteria and telemetry requirements using their Cartesian relationship.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-004",
+      "concern": "The claimed durable disposition guarantee is not demonstrated by a Ref-based in-memory store, because process termination loses both idempotency registrations and disposition records.",
+      "severity": "HIGH",
+      "severity_score": 770,
+      "why_matters": "The central product promise uses the word durable, but wave 1 only proves an atomic in-process state transition. This may create false confidence that crash recovery and replay safety have been validated.",
+      "location": "G1, FR-3, G2, Section 7 reconciliation",
+      "recommendation": "Rename the wave-1 claim to atomic in-memory reference semantics, explicitly defer durability and crash recovery, and define production-store conformance tests that must later cover restart persistence and transactional rollback.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-001",
+      "concern": "The no-silent-drop invariant is not guaranteed when normalization fails outside the adapter's modeled error channel, the registry cannot select an adapter, envelope decoding fails before orchestration, or the store commit itself fails.",
+      "severity": "CRITICAL",
+      "severity_score": 930,
+      "why_matters": "These are precisely the failure paths most likely to lose events, yet FR-4 only converts AdapterContractError and FR-10 does not define a durable failure path for orchestration or storage defects.",
+      "location": "FR-3, FR-4, FR-10, INV-1, AC-5",
+      "recommendation": "Define ingestion from the earliest byte boundary, enumerate every failure channel, and require each accepted input to receive a durable outcome. Specify retry and recovery behavior for store failure, defects, interruption, missing adapters, and pre-envelope decode failure; add fault-injection tests for every path.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-005",
+      "concern": "The raw-event envelope and quarantine retention policy are not specified, creating tension between forensic explainability and the prohibition on retaining message content or unnecessary PII.",
+      "severity": "HIGH",
+      "severity_score": 735,
+      "why_matters": "If malformed payloads are fully retained, sensitive data may be stored; if discarded, engineers may be unable to reproduce or patch failures. Unknown events may contain secrets or large attacker-controlled fields.",
+      "location": "FR-1, FR-9, AC-7, INV-3, INV-8, INV-10",
+      "recommendation": "Define a redacted quarantine record with bounded metadata, provider/event identifiers, schema-error details, payload digest, size limits, retention class, and optional separately controlled encrypted evidence reference. Add tests proving content and secrets never enter dispositions or telemetry.",
+      "source": "tertiary_skeptic"
+    },
+    {
+      "id": "SKP-002",
+      "concern": "upstreamEventId uniqueness scope, composition, and duplicate-equality rules are not specified (per-connection vs per-provider vs global; payload hash ignored or not).",
+      "severity": "CRITICAL",
+      "severity_score": 860,
+      "why_matters": "Ambiguous idempotency keys cause false duplicates (dropped legitimate events) or false commits (double projection) when providers redeliver, shard gateways, or reuse identifiers across connections.",
+      "location": "FR-2, FR-3, INV-1",
+      "recommendation": "Normatively define the idempotency key tuple (providerId, connectionId, upstreamEventId, optional payload digest) in protocol schemas and add conformance tests for redelivery, collision, and cross-connection isolation.",
+      "source": "tertiary_skeptic"
+    }
+  ],
+  "degraded": false,
+  "degraded_model": null,
+  "confidence": "full",
+  "phase": "prd",
+  "document": "grimoires/loa/prd.md",
+  "domain": " product requirements document freeside",
+  "tertiary_model_used": "grok-headless",
+  "tertiary_status": "active",
+  "execution": {
+    "mode": "hitl",
+    "mode_reason": "Simstim workflow active (.run/simstim-state.json state=RUNNING)",
+    "run_id": null
+  },
+  "timestamp": "2026-07-15T18:56:14Z",
+  "metrics": {
+    "total_latency_ms": 123000,
+    "cost_cents": 0,
+    "cost_usd": 0
+  }
+}
